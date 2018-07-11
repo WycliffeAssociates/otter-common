@@ -9,5 +9,5 @@ interface Dao<T> {
     fun getById(id: Int): Observable<T>
     fun getAll(): Observable<List<T>>
     fun update(obj: T): Completable
-    fun deleteById(id:Int): Completable
+    fun delete(obj: T): Completable
 }
