@@ -1,9 +1,9 @@
 package data
 
 data class User (
-    var id: Int,
+    var id: Int = 0,
     var hash: String,
-    var recordedNamePath: String
+    val recordedNamePath: String
 )
 
 
