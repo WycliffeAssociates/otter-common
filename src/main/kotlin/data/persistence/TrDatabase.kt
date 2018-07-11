@@ -1,4 +1,4 @@
-package data.persistance
+package data.persistence
 
 interface TrDatabase {
      fun getUserDao()
