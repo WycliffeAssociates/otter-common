@@ -6,5 +6,5 @@ data class Collection(
         var sort: Int,
         var label: String,
         var srcFile:String,
-        val Language: Set<Language>
+        val Language: MutableSet<Language>
 )
