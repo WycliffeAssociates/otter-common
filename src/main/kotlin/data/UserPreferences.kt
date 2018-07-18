@@ -1,12 +1,10 @@
 package data
 
 data class UserPreferences(
-        var preferredSourceLanguage: Language,
-        var preferredTargetLanguage: Language,
-        var recordPluginName: String,
-        var editPluginName: String,
-        var dayNightMode: Enum<DayNight>,
-        var uILanguagePreferences: String
+        var preferredSourceLanguage: Language?,
+        var preferredTargetLanguage: Language?,
+        var dayNightMode: Enum<DayNight> = DayNight.DAY,
+        var uILanguagePreferences: String = "en"
 )
 
 enum class DayNight{
