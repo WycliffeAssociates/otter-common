@@ -1,10 +1,11 @@
 package data
 
 data class UserPreferences(
-        var preferredSourceLanguage: Language?,
-        var preferredTargetLanguage: Language?,
+        var userId: Int = 0,
+        var preferredSourceLanguage: Language,
+        var preferredTargetLanguage: Language,
         var dayNightMode: Enum<DayNight> = DayNight.DAY,
-        var uILanguagePreferences: String = "en"
+        var uiLanguagePreferences: String = "en"
 )
 
 enum class DayNight{
