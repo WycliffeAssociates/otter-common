@@ -8,5 +8,4 @@ import data.dao.Dao
 interface TrDatabase {
      fun getUserDao(): Dao<User>
      fun getLanguageDao(): Dao<Language>
-     fun getUserPreferencesDao(): Dao<UserPreferences>
 }
