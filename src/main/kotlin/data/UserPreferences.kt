@@ -1,7 +1,7 @@
 package data
 
 data class UserPreferences(
-        var userId: Int = 0,
+        var id: Int = 0,
         var preferredSourceLanguage: Language,
         var preferredTargetLanguage: Language,
         var dayNightMode: Enum<DayNight> = DayNight.DAY,
