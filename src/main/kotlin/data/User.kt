@@ -5,7 +5,8 @@ data class User(
         var audioHash: String,
         val audioPath: String,
         val sourceLanguages: MutableList<Language>,
-        val targetLanguages: MutableList<Language>
+        val targetLanguages: MutableList<Language>,
+        var userPreferences: UserPreferences
 )
 
 
