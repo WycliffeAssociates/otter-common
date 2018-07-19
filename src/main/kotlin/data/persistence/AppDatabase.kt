@@ -5,7 +5,7 @@ import data.User
 import data.UserPreferences
 import data.dao.Dao
 
-interface TrDatabase {
+interface AppDatabase {
      fun getUserDao(): Dao<User>
      fun getLanguageDao(): Dao<Language>
 }
