@@ -2,9 +2,10 @@ package data.persistence
 
 import data.Language
 import data.User
+import data.UserPreferences
 import data.dao.Dao
 
-interface TrDatabase {
+interface AppDatabase {
      fun getUserDao(): Dao<User>
-     fun geLanguageDao(): Dao<Language>
+     fun getLanguageDao(): Dao<Language>
 }
