@@ -2,7 +2,7 @@ package data
 
 data class Take(
         var id: Int,
-        var filePath: String,
-        var sort: Int,
+        val filePath: String,
+        val sort: Int,
         var played: Boolean
 )

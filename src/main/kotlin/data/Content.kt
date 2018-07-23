@@ -5,5 +5,5 @@ data class Content(
         var percentRecorded: Int,
         var percentEdited: Int,
         var percentCompleted: Int,
-        var takes: MutableList<Take>
+        val takes: MutableList<Take>
 )
