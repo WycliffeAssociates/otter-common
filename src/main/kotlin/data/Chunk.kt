@@ -6,5 +6,5 @@ data class Chunk(
         val end: Int,
         val sort: Int,
         val srcFile: String,
-        var content: Content
+        val content: MutableSet<Content>
 )
