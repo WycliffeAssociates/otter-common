@@ -1,9 +1,8 @@
 package data.persistence
 
-import data.Language
-import data.Project
-import data.User
-import data.UserPreferences
+import data.model.Language
+import data.model.Project
+import data.model.User
 import data.dao.Dao
 
 interface AppDatabase {

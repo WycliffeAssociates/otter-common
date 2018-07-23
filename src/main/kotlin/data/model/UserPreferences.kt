@@ -1,4 +1,4 @@
-package data
+package data.model
 
 data class UserPreferences(
         var id: Int = 0,
