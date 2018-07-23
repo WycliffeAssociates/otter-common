@@ -1,7 +1,7 @@
 package data
 
 data class Collection(
-        var id: Int,
+        var id: Int = 0,
         var title: String,
         var sort: Int,
         var label: String,
