@@ -5,5 +5,5 @@ data class Project(
         val targetLanguage: Language,
         val sourceLanguage: Language,
         var title: String,
-        val collection: Collection
+        val book: Book
 )
