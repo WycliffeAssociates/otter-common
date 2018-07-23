@@ -5,5 +5,8 @@ data class Chunk(
         val start: Int,
         val end: Int,
         val sort: Int,
-        val srcFile: String
+        val srcFile: String,
+        var numRecorded: Int,
+        var numEdited: Int,
+        var numCompleted: Int
 )
