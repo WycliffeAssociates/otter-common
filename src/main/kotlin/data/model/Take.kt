@@ -1,4 +1,4 @@
-package data
+package data.model
 
 data class Take(
         var id: Int,
