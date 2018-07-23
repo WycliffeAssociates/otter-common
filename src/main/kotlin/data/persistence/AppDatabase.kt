@@ -12,5 +12,4 @@ interface AppDatabase {
     fun getChapterDao(): Dao<Chapter>
     fun getChunkDao(): Dao<Chunk>
     fun getTakesDao(): Dao<Take>
-    fun getContentDao(): Dao<Content>
 }
