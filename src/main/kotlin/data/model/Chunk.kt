@@ -6,7 +6,7 @@ data class Chunk(
         val end: Int,
         val sort: Int,
         val srcFile: String,
-        var Recorded: Boolean,
-        var Edited: Boolean,
-        var Completed: Boolean
+        var recorded: Boolean,
+        var edited: Boolean,
+        var completed: Boolean
 )
