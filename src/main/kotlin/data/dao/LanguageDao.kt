@@ -4,6 +4,6 @@ import data.model.Language
 import io.reactivex.Observable
 import java.util.*
 
-interface LanguageDao: Dao<Language>{
-    fun getGatewayLanguage(): Observable<List<Language>>
+interface LanguageDao : Dao<Language> {
+    fun getGatewayLanguages(): Observable<List<Language>>
 }
