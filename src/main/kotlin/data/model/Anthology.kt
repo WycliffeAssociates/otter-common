@@ -1,8 +1,9 @@
 package data.model
 
-data class Anthology(
-        var id: Int = 0,
-        val title: String, // This will be a key
-        val label: String,
-        val sort: Int
-)
+class Anthology(
+        id: Int = 0,
+        belongsTo: String,
+        titleKey: String,
+        sort: Int,
+        imagePath: String
+) : Collection(id, "anthology", belongsTo, titleKey, sort, imagePath)
