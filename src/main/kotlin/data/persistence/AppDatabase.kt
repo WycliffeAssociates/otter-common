@@ -1,11 +1,12 @@
 package data.persistence
 
 import data.dao.Dao
+import data.dao.LanguageDao
 import data.model.*
 
 interface AppDatabase {
     fun getUserDao(): Dao<User>
-    fun getLanguageDao(): Dao<Language>
+    fun getLanguageDao(): LanguageDao
     fun getProjectDao(): Dao<Project>
     fun getAnthologyDao(): Dao<Anthology>
     fun getBookDao(): Dao<Book>
