@@ -5,5 +5,5 @@ import io.reactivex.Observable
 interface IAudioRecorder {
     fun record()
     fun stop()
-    fun getAudioByteObservable(): Observable<ByteArray>
+    fun getAudioStream(): Observable<ByteArray>
 }
