@@ -7,7 +7,7 @@ class ImportAudioPlugins(private val pluginRegistrar: IAudioPluginRegistrar) {
     fun import(pluginFile: File): Completable {
         return pluginRegistrar.import(pluginFile)
     }
-    fun importAll(pluginsDir: File): Completable {
-        return pluginRegistrar.importAll(pluginsDir)
+    fun importAll(pluginDir: File): Completable {
+        return pluginRegistrar.importAll(pluginDir)
     }
 }

@@ -5,5 +5,5 @@ import java.io.File
 
 interface IAudioPluginRegistrar {
     fun import(pluginFile: File): Completable
-    fun importAll(pluginsDir: File): Completable
+    fun importAll(pluginDir: File): Completable
 }
