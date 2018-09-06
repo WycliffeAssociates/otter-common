@@ -7,7 +7,7 @@ interface IAudioPlayer {
 
     fun load(file: File): Completable
 
-    fun play()
+    fun play(onFinish: (() -> Unit) = {})
 
     fun pause()
 
