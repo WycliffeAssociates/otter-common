@@ -4,5 +4,6 @@ enum class AudioPlayerEvent {
     LOAD,
     PLAY,
     PAUSE,
-    STOP
+    STOP,
+    COMPLETE
 }
