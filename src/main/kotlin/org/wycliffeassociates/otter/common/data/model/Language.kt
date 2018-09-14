@@ -4,6 +4,7 @@ data class Language(
         var id: Int = 0,
         val slug: String,
         val name: String,
-        val isGateway: Boolean,
-        val anglicizedName: String
+        val anglicizedName: String,
+        val isRtl: Boolean,
+        val isGateway: Boolean
 )
