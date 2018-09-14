@@ -1,7 +1,7 @@
 package org.wycliffeassociates.otter.common.data.model
 
 import java.io.File
-import java.util.*
+import java.util.Calendar
 
 data class ResourceContainer(
         var id: Int,
