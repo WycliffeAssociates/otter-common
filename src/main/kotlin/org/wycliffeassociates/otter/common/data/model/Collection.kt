@@ -4,6 +4,5 @@ data class Collection(
         var id: Int,
         var sort: Int,
         var labelKey: String,
-        var titleKey: String,
-        var derivedFrom: Collection?
+        var titleKey: String
 )
