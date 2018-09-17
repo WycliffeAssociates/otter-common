@@ -2,9 +2,9 @@ package org.wycliffeassociates.otter.common.data.model
 
 data class Language(
         var id: Int,
-        val slug: String,
-        val name: String,
-        val anglicizedName: String,
-        val isRtl: Boolean,
-        val isGateway: Boolean
+        var slug: String,
+        var name: String,
+        var anglicizedName: String,
+        var isRtl: Boolean,
+        var isGateway: Boolean
 )
