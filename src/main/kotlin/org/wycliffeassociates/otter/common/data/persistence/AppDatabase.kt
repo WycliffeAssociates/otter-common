@@ -6,7 +6,7 @@ import org.wycliffeassociates.otter.common.data.audioplugin.IAudioPlugin
 import org.wycliffeassociates.otter.common.data.model.*
 import org.wycliffeassociates.otter.common.data.model.Collection
 
-interface IAppDatabase {
+interface AppDatabase {
     fun getLanguageDao(): Dao<Language>
     fun getCollectionDao(): Dao<Collection>
     fun getChunkDao(): Dao<Chunk>
