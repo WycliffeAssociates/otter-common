@@ -8,7 +8,6 @@ import org.wycliffeassociates.otter.common.data.model.Collection
 
 interface IAppDatabase {
     fun getLanguageDao(): Dao<Language>
-    fun getProjectDao(): Dao<Project>
     fun getCollectionDao(): Dao<Collection>
     fun getChunkDao(): Dao<Chunk>
     fun getTakeDao(): Dao<Take>
