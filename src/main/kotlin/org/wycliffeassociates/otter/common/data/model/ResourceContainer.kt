@@ -4,7 +4,6 @@ import java.io.File
 import java.util.Calendar
 
 data class ResourceContainer(
-        var id: Int,
         var conformsTo: String,
         var creator: String,
         var description: String,
@@ -18,5 +17,6 @@ data class ResourceContainer(
         var type: String,
         var title: String,
         var version: Int,
-        var path: File
+        var path: File,
+        var id: Int = 0
 )
