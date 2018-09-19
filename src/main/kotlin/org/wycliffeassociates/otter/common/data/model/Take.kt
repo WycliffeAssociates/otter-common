@@ -9,5 +9,6 @@ data class Take(
         var number: Int,
         var timestamp: Calendar,
         var isUnheard: Boolean,
+        var markers: List<Marker>,
         var id: Int = 0
 )
