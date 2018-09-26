@@ -3,6 +3,7 @@ package org.wycliffeassociates.otter.common.domain
 import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.Single
+import junit.framework.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.ArgumentMatchers
@@ -40,7 +41,8 @@ class ImportResourceContainerTest {
     @Test
     fun testImport() {
         val classLoader = this.javaClass.classLoader
-        val resource = File(classLoader.getResource("valid_single_book_rc").path)
+        val resource = File(classLoader.getResource("valid_single_book_rc").toURI().path)
+        assertTrue(resource.exists())
         val rcImporter = ImportResourceContainer(
                 mockLanguageDao,
                 mockMetadataDao,

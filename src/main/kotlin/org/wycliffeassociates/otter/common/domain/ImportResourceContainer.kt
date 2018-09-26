@@ -34,7 +34,7 @@ class ImportResourceContainer(
 
     private fun importDirectory(dir: File) {
         if (validateResourceContainer(dir)) {
-            if (dir.parentFile.absolutePath != rcDirectory.absolutePath) {
+            if (dir.parentFile?.absolutePath != rcDirectory.absolutePath) {
                 val success = dir.copyRecursively(File(rcDirectory, dir.name), true)
                 if (!success) {
                     throw IOException("Could not copy resource container ${dir.name} to resource container directory")
@@ -56,7 +56,7 @@ class ImportResourceContainer(
         val dc = rc.manifest.dublinCore
 
         return Completable.fromCallable {
-            languageDao.getBySlug(dc.language!!.identifier).subscribe {
+            languageDao.getBySlug(dc.language.identifier).subscribe {
                 val resourceMetadata = dc.mapToMetadata(container, it)
                 //set the id in the resourceMetadata object once it returns from the insert call
                 //metadata id is going to be needed for the collection insert
@@ -75,7 +75,7 @@ class ImportResourceContainer(
     }
 }
 
-fun Project.mapToCollection(type: String, metadata: ResourceMetadata): Collection {
+private fun Project.mapToCollection(type: String, metadata: ResourceMetadata): Collection {
     return Collection(
             sort,
             identifier,
@@ -85,7 +85,7 @@ fun Project.mapToCollection(type: String, metadata: ResourceMetadata): Collectio
     )
 }
 
-fun DublinCore.mapToMetadata(dir: File, lang: Language): ResourceMetadata {
+private fun DublinCore.mapToMetadata(dir: File, lang: Language): ResourceMetadata {
     return ResourceMetadata(
             conformsTo,
             creator,
