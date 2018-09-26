@@ -21,8 +21,7 @@ apply plugin: 'kotlin'
 sourceCompatibility = 1.8
 
 repositories {
-    mavenCentral()
-    maven { url 'https://jitpack.io' }
+    jcenter()
 }
 
 dependencies {
@@ -38,7 +37,6 @@ dependencies {
 
     //resource container
     implementation 'org.wycliffeassociates:kotlin-resource-container'
-    //implementation 'com.github.WycliffeAssociates:kotlin-resource-container:quickfixes-SNAPSHOT'
 }
 
 compileKotlin {
