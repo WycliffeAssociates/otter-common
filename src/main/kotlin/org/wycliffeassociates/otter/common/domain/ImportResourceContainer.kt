@@ -85,15 +85,35 @@ private fun Project.mapToCollection(type: String, metadata: ResourceMetadata): C
 }
 
 private fun DublinCore.mapToMetadata(dir: File, lang: Language): ResourceMetadata {
+    val (issuedDate, modifiedDate) = listOf(issued, modified)
+            .map {
+                it
+                        // Remove any time information
+                        .substringBefore("T")
+                        // Split into YYYY, MM, and DD parts
+                        .split("-")
+                        .toMutableList()
+                        // Add any months or days to complete the YYYY-MM-DD format
+                        .apply {
+                            for (i in 1..(3 - size)) {
+                                add("01")
+                            }
+                        }
+                        // Combine back to a string
+                        .joinToString("-")
+                        // Parse to local date
+                        .let { sanitized -> LocalDate.parse(sanitized) }
+            }
+
     return ResourceMetadata(
             conformsTo,
             creator,
             description,
             format,
             identifier,
-            LocalDate.now(),
+            issuedDate,
             lang,
-            LocalDate.now(),
+            modifiedDate,
             publisher,
             subject,
             type,
