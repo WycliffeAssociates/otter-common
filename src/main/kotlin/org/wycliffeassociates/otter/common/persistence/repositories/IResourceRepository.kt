@@ -15,5 +15,5 @@ interface IResourceRepository : IRepository<Resource> {
     fun linkToChunk(resource: Resource, chunk: Chunk): Completable
     fun unlinkFromChunk(resource: Resource, chunk: Chunk): Completable
     fun linkToCollection(resource: Resource, collection: Collection): Completable
-    fun unlinkFromCollection(resource: Resource, chunk: Chunk): Completable
+    fun unlinkFromCollection(resource: Resource, collection: Collection): Completable
 }
