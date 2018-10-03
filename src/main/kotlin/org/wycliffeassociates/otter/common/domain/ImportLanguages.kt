@@ -22,7 +22,6 @@ class ImportLanguages(val file: File, val languageRepo: ILanguageRepository) {
             }
             Observable.fromIterable(languages.toList())
                     .map {
-                        println(it)
                         it.toLanguage()
                     }
                     .subscribe {
