@@ -41,6 +41,10 @@ class ProjectPageActions(
         return takeRepo.insertForChunk(take, chunk)
     }
 
+    fun updateTake(take: Take): Completable {
+        return takeRepo.update(take)
+    }
+
     fun createNewTake(chunk: Chunk, project: Collection): Single<Take> {
         return getTakeCount(chunk)
                 .map { numOfTakes ->
