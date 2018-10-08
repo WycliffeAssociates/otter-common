@@ -85,6 +85,10 @@ class MockCollectionRepository: ICollectionRepository {
 }
 
 class MockLanguageRepository: ILanguageRepository {
+    override fun insertAll(languages: List<Language>): Single<List<Int>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     override fun getGateway(): Single<List<Language>> {
         return Single.just(listOf(Mockito.mock(Language::class.java)))
     }
@@ -115,6 +119,17 @@ class MockLanguageRepository: ILanguageRepository {
 }
 
 class MockResourceMetadataRepository: IResourceMetadataRepository {
+    override fun addLink(firstMetadata: ResourceMetadata, secondMetadata: ResourceMetadata): Completable {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun removeLink(firstMetadata: ResourceMetadata, secondMetadata: ResourceMetadata): Completable {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getLinked(metadata: ResourceMetadata): Single<List<ResourceMetadata>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
 
     override fun getAll(): Single<List<ResourceMetadata>> {
         return Single.just(listOf(Mockito.mock(ResourceMetadata::class.java)))
