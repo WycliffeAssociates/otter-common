@@ -5,6 +5,7 @@ import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Language
 import org.wycliffeassociates.otter.common.data.model.ResourceMetadata
 import org.wycliffeassociates.otter.common.persistence.repositories.*
+import org.wycliffeassociates.otter.common.domain.usfm.parseUSFMFile
 
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
@@ -55,6 +56,10 @@ class ImportResourceContainer(
         val rc = ResourceContainer.load(container)
         val dc = rc.manifest.dublinCore
 
+        if (dc.type == "bundle" && dc.format == "text/usfm") {
+            expandResourceContainerBundle(container)
+        }
+
         return Completable.fromCallable {
             languageRepository.getBySlug(dc.language.identifier).subscribe { language ->
                 val resourceMetadata = dc.mapToMetadata(container, language)
@@ -64,6 +69,40 @@ class ImportResourceContainer(
                     for (p in rc.manifest.projects) {
                         importProject(p, resourceMetadata)
                     }
+                }
+            }
+        }
+    }
+
+    fun expandResourceContainerBundle(container: File) {
+        val rc = ResourceContainer.load(container)
+        val dc = rc.manifest.dublinCore
+
+        dc.type = "book"
+        for (project in rc.manifest.projects) {
+            expandUsfm(container, project)
+        }
+
+        rc.writeManifest()
+    }
+
+    fun expandUsfm(root: File, project: Project) {
+        val projectRoot = File(root, project.identifier)
+        projectRoot.mkdir()
+        val usfmFile = File(root, project.path)
+        val book = parseUSFMFile(usfmFile)
+        val chapterPadding = book.size.toString().length //length of the string version of the number of chapters
+        val bookDir = File(root, project.identifier)
+        bookDir.mkdir()
+        for (chapter in book.entries) {
+            val chapterFile = File(bookDir, chapter.key.toString().padStart(chapterPadding, '0') + ".usfm")
+            val verses = chapter.value
+            verses.sortBy { it.number }
+            chapterFile.bufferedWriter().use {
+                it.write("\\c ${chapter.key}")
+                it.newLine()ls
+                for (verse in verses) {
+                    it.appendln("\\v ${verse.number} ${verse.text}")
                 }
             }
         }
