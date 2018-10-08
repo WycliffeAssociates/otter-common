@@ -50,7 +50,7 @@ class ProjectPageActions(
                 .map { numOfTakes ->
                     // Create a file for this take
                     val takeFile = directoryProvider
-                            .getProjectAudioDirectory(listOf(project, chapter))
+                            .getProjectAudioDirectory(project, listOf(chapter))
                             .resolve(File("chunk${chunk.sort}_take${numOfTakes + 1}.wav"))
 
                     val newTake = Take(
