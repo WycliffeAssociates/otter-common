@@ -6,6 +6,7 @@ import org.wycliffeassociates.otter.common.data.model.Language
 import org.wycliffeassociates.otter.common.data.model.ResourceMetadata
 import org.wycliffeassociates.otter.common.domain.usfm.ParseUsfm
 import org.wycliffeassociates.otter.common.persistence.repositories.*
+import org.wycliffeassociates.otter.common.domain.usfm.parseUSFMFile
 
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
