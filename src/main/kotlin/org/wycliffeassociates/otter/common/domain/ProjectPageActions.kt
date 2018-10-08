@@ -45,15 +45,13 @@ class ProjectPageActions(
         return takeRepo.update(take)
     }
 
-    fun createNewTake(chunk: Chunk, project: Collection): Single<Take> {
+    fun createNewTake(chunk: Chunk, project: Collection, chapter: Collection): Single<Take> {
         return getTakeCount(chunk)
                 .map { numOfTakes ->
                     // Create a file for this take
                     val takeFile = directoryProvider
-                            .getUserDataDirectory(
-                                    listOf("projects", "project${project.id}")
-                                            .joinToString(File.separator)
-                            ).resolve(File("chunk${chunk.id}_take${numOfTakes + 1}.wav"))
+                            .getProjectAudioDirectory(listOf(project, chapter))
+                            .resolve(File("chunk${chunk.sort}_take${numOfTakes + 1}.wav"))
 
                     val newTake = Take(
                             takeFile.name,
