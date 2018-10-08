@@ -100,7 +100,7 @@ class ImportResourceContainer(
             verses.sortBy { it.number }
             chapterFile.bufferedWriter().use {
                 it.write("\\c ${chapter.key}")
-                it.newLine()ls
+                it.newLine()
                 for (verse in verses) {
                     it.appendln("\\v ${verse.number} ${verse.text}")
                 }
