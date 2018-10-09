@@ -1,5 +1,6 @@
 package org.wycliffeassociates.otter.jvm.usecases
 
+import io.reactivex.Completable
 import io.reactivex.Single
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Language
@@ -9,10 +10,12 @@ import org.wycliffeassociates.otter.common.persistence.repositories.ILanguageRep
 import org.wycliffeassociates.otter.common.persistence.repositories.IProjectRepository
 import org.wycliffeassociates.otter.common.persistence.repositories.ISourceRepository
 
-class CreateProjectUseCase(val languageRepo: ILanguageRepository,
-                           val sourceRepo: ISourceRepository,
-                           val collectionRepo: ICollectionRepository, val projectRepo: IProjectRepository) {
-
+class CreateProjectUseCase(
+        val languageRepo: ILanguageRepository,
+        val sourceRepo: ISourceRepository,
+        val collectionRepo: ICollectionRepository,
+        val projectRepo: IProjectRepository
+) {
     fun getAllLanguages(): Single<List<Language>> {
         return languageRepo.getAll()
     }
@@ -33,14 +36,18 @@ class CreateProjectUseCase(val languageRepo: ILanguageRepository,
         return sourceRepo.getChildren(identifier)
     }
 
-    fun updateSource(projectId: Int, sourceCollection: Collection) {
-        projectRepo.getAll().doOnSuccess {
-            for (projectCollection in it) {
-                if (projectCollection.id == projectId) {
-                    projectRepo.updateSource(projectCollection, sourceCollection)
-                            .subscribe()
+    fun updateSource(projectId: Int, sourceCollection: Collection): Completable {
+        return projectRepo
+                .getAll()
+                .map {
+                    it.filter { it.id == projectId }
                 }
-            }
-        }.subscribe()
+                .flatMapCompletable {
+                    if (it.isNotEmpty()) {
+                        projectRepo.updateSource(it.first(), sourceCollection)
+                    } else {
+                        Completable.complete()
+                    }
+                }
     }
 }
