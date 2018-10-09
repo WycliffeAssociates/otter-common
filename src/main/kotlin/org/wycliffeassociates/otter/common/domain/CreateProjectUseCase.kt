@@ -1,4 +1,4 @@
-package org.wycliffeassociates.otter.common.domain.usecases
+package org.wycliffeassociates.otter.common.domain
 
 import io.reactivex.Completable
 import io.reactivex.Single
