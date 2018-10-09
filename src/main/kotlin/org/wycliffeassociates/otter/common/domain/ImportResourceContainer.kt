@@ -4,8 +4,8 @@ import io.reactivex.Completable
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Language
 import org.wycliffeassociates.otter.common.data.model.ResourceMetadata
+import org.wycliffeassociates.otter.common.domain.usfm.ParseUsfm
 import org.wycliffeassociates.otter.common.persistence.repositories.*
-import org.wycliffeassociates.otter.common.domain.usfm.parseUSFMFile
 
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
@@ -57,7 +57,7 @@ class ImportResourceContainer(
         val dc = rc.manifest.dublinCore
 
         if (dc.type == "bundle" && dc.format == "text/usfm") {
-            expandResourceContainerBundle(container)
+            expandResourceContainerBundle(rc)
         }
 
         return Completable.fromCallable {
@@ -74,13 +74,12 @@ class ImportResourceContainer(
         }
     }
 
-    fun expandResourceContainerBundle(container: File) {
-        val rc = ResourceContainer.load(container)
+    fun expandResourceContainerBundle(rc: ResourceContainer) {
         val dc = rc.manifest.dublinCore
-
         dc.type = "book"
+
         for (project in rc.manifest.projects) {
-            expandUsfm(container, project)
+            expandUsfm(rc.dir, project)
         }
 
         rc.writeManifest()
@@ -90,26 +89,38 @@ class ImportResourceContainer(
         val projectRoot = File(root, project.identifier)
         projectRoot.mkdir()
         val usfmFile = File(root, project.path)
-        val book = parseUSFMFile(usfmFile)
-        val chapterPadding = book.size.toString().length //length of the string version of the number of chapters
-        val bookDir = File(root, project.identifier)
-        bookDir.mkdir()
-        for (chapter in book.entries) {
-            val chapterFile = File(bookDir, chapter.key.toString().padStart(chapterPadding, '0') + ".usfm")
-            val verses = chapter.value
-            verses.sortBy { it.number }
-            chapterFile.bufferedWriter().use {
-                it.write("\\c ${chapter.key}")
-                it.newLine()
-                for (verse in verses) {
-                    it.appendln("\\v ${verse.number} ${verse.text}")
+        if(usfmFile.exists() && usfmFile.extension == "usfm") {
+            val book = ParseUsfm(usfmFile).parse()
+            val chapterPadding = book.size.toString().length //length of the string version of the number of chapters
+            val bookDir = File(root, project.identifier)
+            bookDir.mkdir()
+            for (chapter in book.entries) {
+                val chapterFile = File(bookDir, chapter.key.toString().padStart(chapterPadding, '0') + ".usfm")
+                val verses = chapter.value.entries.map { it.value }.toTypedArray()
+                verses.sortBy { it.number }
+                chapterFile.bufferedWriter().use {
+                    it.write("\\c ${chapter.key}")
+                    it.newLine()
+                    for (verse in verses) {
+                        it.appendln("\\v ${verse.number} ${verse.text}")
+                    }
                 }
             }
+            usfmFile.delete()
         }
+        project.path = "./${project.identifier}"
     }
 
     private fun importProject(p: Project, resourceMetadata: ResourceMetadata) {
-        collectionRepository.insert(p.mapToCollection(resourceMetadata.type, resourceMetadata)).subscribe()
+        val book = p.mapToCollection(resourceMetadata.type, resourceMetadata)
+        collectionRepository.insert(book).doOnSuccess {
+            //associate a parent/child relationship with the project if there is a category entry
+            if (p.categories.isNotEmpty()) {
+                val anth = collectionRepository.getBySlugAndContainer(p.categories.first(), book.resourceContainer)
+                book.id = it
+                collectionRepository.updateParent(book, anth)
+            }
+        }.subscribe()
     }
 }
 
