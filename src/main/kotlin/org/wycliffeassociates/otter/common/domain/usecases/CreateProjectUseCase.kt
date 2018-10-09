@@ -1,4 +1,4 @@
-package org.wycliffeassociates.otter.jvm.usecases
+package org.wycliffeassociates.otter.common.domain.usecases
 
 import io.reactivex.Single
 import org.wycliffeassociates.otter.common.data.model.Collection
