@@ -37,7 +37,6 @@ class ParseUsfm(val file: File) {
     }
 
     private fun parseLine(line: String) {
-        println(line)
         val split = line.split("\\s+".toRegex(), 2)
         if (split.isEmpty()) {
             return
