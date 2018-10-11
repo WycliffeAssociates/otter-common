@@ -8,6 +8,7 @@ import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Take
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
 import org.wycliffeassociates.otter.common.persistence.IWaveFileCreator
+import org.wycliffeassociates.otter.common.persistence.repositories.IAudioPluginRepository
 import org.wycliffeassociates.otter.common.persistence.repositories.IChunkRepository
 import org.wycliffeassociates.otter.common.persistence.repositories.ICollectionRepository
 import org.wycliffeassociates.otter.common.persistence.repositories.ITakeRepository
@@ -19,7 +20,8 @@ class ProjectPageActions(
         private val waveFileCreator: IWaveFileCreator,
         private val collectionRepo: ICollectionRepository,
         private val chunkRepo: IChunkRepository,
-        private val takeRepo: ITakeRepository
+        private val takeRepo: ITakeRepository,
+        private val pluginRepo: IAudioPluginRepository
 ) {
     fun getChildren(projectRoot: Collection): Single<List<Collection>> {
         return collectionRepo.getChildren(projectRoot)
@@ -69,7 +71,11 @@ class ProjectPageActions(
                 }
     }
 
-    fun launchPluginForTake(take: Take, plugin: IAudioPlugin): Completable {
-        return plugin.launch(take.path)
+    fun launchDefaultPluginForTake(take: Take): Completable {
+        return pluginRepo
+                .getDefaultPlugin()
+                .flatMapCompletable {
+                    it.launch(take.path)
+                }
     }
 }

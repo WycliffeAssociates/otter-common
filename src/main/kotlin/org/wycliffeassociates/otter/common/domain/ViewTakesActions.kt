@@ -31,8 +31,4 @@ class ViewTakesActions(
         take.played = played
         return takeRepo.update(take)
     }
-
-    fun launchPluginForTake(take: Take, plugin: IAudioPlugin): Completable {
-        return plugin.launch(take.path)
-    }
 }
