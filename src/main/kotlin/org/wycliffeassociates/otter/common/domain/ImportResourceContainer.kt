@@ -1,10 +1,12 @@
 package org.wycliffeassociates.otter.common.domain
 
 import io.reactivex.Completable
+import org.wycliffeassociates.otter.common.data.model.Chunk
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Language
 import org.wycliffeassociates.otter.common.data.model.ResourceMetadata
 import org.wycliffeassociates.otter.common.domain.usfm.ParseUsfm
+import org.wycliffeassociates.otter.common.domain.usfm.UsfmDocument
 import org.wycliffeassociates.otter.common.persistence.repositories.*
 
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
@@ -14,6 +16,7 @@ import org.wycliffeassociates.resourcecontainer.entity.Project
 import org.wycliffeassociates.resourcecontainer.errors.RCException
 
 import java.io.File
+import java.io.FileFilter
 import java.io.IOException
 import java.time.LocalDate
 import java.time.ZonedDateTime
@@ -22,6 +25,7 @@ class ImportResourceContainer(
         private val languageRepository: ILanguageRepository,
         private val metadataRepository: IResourceMetadataRepository,
         private val collectionRepository: ICollectionRepository,
+        private val chunkRepository: IChunkRepository,
         directoryProvider: IDirectoryProvider
 ) {
 
@@ -66,6 +70,9 @@ class ImportResourceContainer(
                 //metadata id is going to be needed for the collection insert
                 metadataRepository.insert(resourceMetadata).subscribe { id ->
                     resourceMetadata.id = id
+
+                    importBible(resourceMetadata)
+
                     for (p in rc.manifest.projects) {
                         importProject(p, resourceMetadata)
                     }
@@ -73,6 +80,17 @@ class ImportResourceContainer(
             }
         }
     }
+
+    fun importBible(meta: ResourceMetadata) {
+        //Initialize bible and testament collections
+        val bible = Collection(1, "bible", "bible", "Bible", meta)
+        val ot = Collection(1, "bible-ot", "testament", "Old Testament", meta)
+        val nt = Collection(2, "bible-nt", "testament", "New Testament", meta)
+        collectionRepository.insert(bible).blockingGet()
+        collectionRepository.insert(ot).blockingGet()
+        collectionRepository.insert(nt).blockingGet()
+    }
+
 
     fun expandResourceContainerBundle(rc: ResourceContainer) {
         val dc = rc.manifest.dublinCore
@@ -89,7 +107,7 @@ class ImportResourceContainer(
         val projectRoot = File(root, project.identifier)
         projectRoot.mkdir()
         val usfmFile = File(root, project.path)
-        if(usfmFile.exists() && usfmFile.extension == "usfm") {
+        if (usfmFile.exists() && usfmFile.extension == "usfm") {
             val book = ParseUsfm(usfmFile).parse()
             val chapterPadding = book.size.toString().length //length of the string version of the number of chapters
             val bookDir = File(root, project.identifier)
@@ -114,14 +132,53 @@ class ImportResourceContainer(
     private fun importProject(p: Project, resourceMetadata: ResourceMetadata) {
         val book = p.mapToCollection(resourceMetadata.type, resourceMetadata)
         collectionRepository.insert(book).doOnSuccess {
+            book.id = it
+
+            importChapters(p, book, resourceMetadata)
+
             //associate a parent/child relationship with the project if there is a category entry
             if (p.categories.isNotEmpty()) {
-                val anth = collectionRepository.getBySlugAndContainer(p.categories.first(), book.resourceContainer)
-                book.id = it
-                collectionRepository.updateParent(book, anth)
+
+                collectionRepository.getBySlugAndContainer(p.categories.first(), book.resourceContainer!!)
+                        .map {
+                            collectionRepository.updateParent(book, it)
+                        }
             }
-        }.subscribe()
+
+        }.blockingGet()
     }
+
+    private fun importChapters(project: Project, book: Collection, meta: ResourceMetadata) {
+        val root = File(meta.path, project.path)
+        val files = root.listFiles(FileFilter { it.extension == "usfm" })
+        for (f in files) {
+            val doc = ParseUsfm(f)
+            doc.parse()
+            for (chapter in doc.chapters) {
+                val ch = Collection(
+                        chapter.key,
+                        "${meta.language.slug}_${book.slug}_ch${chapter.key}",
+                        "chapter",
+                        chapter.key.toString(),
+                        meta
+                )
+                collectionRepository.insert(ch).doOnSuccess {
+                    ch.id = it
+                    for (verse in chapter.value.values) {
+                        val vs = Chunk(
+                                verse.number,
+                                "verse",
+                                verse.number,
+                                verse.number,
+                                null
+                        )
+                        chunkRepository.insertForCollection(vs, ch).blockingGet()
+                    }
+                }.blockingGet()
+            }
+        }
+    }
+
 }
 
 private fun Project.mapToCollection(type: String, metadata: ResourceMetadata): Collection {
