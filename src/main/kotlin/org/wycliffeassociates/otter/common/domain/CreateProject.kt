@@ -1,4 +1,4 @@
-package org.wycliffeassociates.otter.common.domain.usecases
+package org.wycliffeassociates.otter.common.domain
 
 import io.reactivex.Completable
 import io.reactivex.Single
@@ -10,7 +10,7 @@ import org.wycliffeassociates.otter.common.persistence.repositories.ILanguageRep
 import org.wycliffeassociates.otter.common.persistence.repositories.IProjectRepository
 import org.wycliffeassociates.otter.common.persistence.repositories.ISourceRepository
 
-class CreateProjectUseCase(
+class CreateProject(
         val languageRepo: ILanguageRepository,
         val sourceRepo: ISourceRepository,
         val collectionRepo: ICollectionRepository,
