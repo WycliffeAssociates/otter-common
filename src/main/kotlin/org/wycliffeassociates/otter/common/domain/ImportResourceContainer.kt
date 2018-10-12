@@ -1,6 +1,8 @@
 package org.wycliffeassociates.otter.common.domain
 
 import io.reactivex.Completable
+import io.reactivex.Observable
+import io.reactivex.Single
 import org.wycliffeassociates.otter.common.data.model.Chunk
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Language
@@ -31,13 +33,14 @@ class ImportResourceContainer(
 
     private val rcDirectory = File(directoryProvider.getAppDataDirectory(), "rc")
 
-    fun import(file: File) {
-        when {
+    fun import(file: File): Completable {
+        return when {
             file.isDirectory -> importDirectory(file)
+            else -> Completable.complete()
         }
     }
 
-    private fun importDirectory(dir: File) {
+    private fun importDirectory(dir: File): Completable {
         if (validateResourceContainer(dir)) {
             if (dir.parentFile?.absolutePath != rcDirectory.absolutePath) {
                 val success = dir.copyRecursively(File(rcDirectory, dir.name), true)
@@ -45,9 +48,9 @@ class ImportResourceContainer(
                     throw IOException("Could not copy resource container ${dir.name} to resource container directory")
                 }
             }
-            importResourceContainer(File(rcDirectory, dir.name)).subscribe { println("imported") }
+            return importResourceContainer(File(rcDirectory, dir.name))
         } else {
-            throw RCException("Missing manifest.yaml")
+            return Completable.error(RCException("Missing manifest.yaml"))
         }
     }
 
@@ -64,22 +67,24 @@ class ImportResourceContainer(
             expandResourceContainerBundle(rc)
         }
 
-        return Completable.fromCallable {
-            languageRepository.getBySlug(dc.language.identifier).subscribe { language ->
-                val resourceMetadata = dc.mapToMetadata(container, language)
-                //metadata id is going to be needed for the collection insert
-                metadataRepository.insert(resourceMetadata).subscribe { id ->
-                    resourceMetadata.id = id
-
-                    importBible(resourceMetadata)
-
-                    for (p in rc.manifest.projects) {
-                        importProject(p, resourceMetadata)
-                    }
-                }
+        return languageRepository.getBySlug(dc.language.identifier).map {
+            dc.mapToMetadata(container, it)
+        }.flatMap {
+            val resourceMetadata = it
+            //metadata id is going to be needed for the collection insert
+            metadataRepository.insert(resourceMetadata).doOnError { println(it) }.map {
+                resourceMetadata.id = it
+                resourceMetadata
+            }
+        }.flatMapCompletable {
+            val resourceMetadata = it
+            importBible(resourceMetadata)
+            Observable.fromIterable(rc.manifest.projects).flatMapCompletable {
+                importProject(it, resourceMetadata).doOnError { println(it) }
             }
         }
     }
+
 
     fun importBible(meta: ResourceMetadata) {
         //Initialize bible and testament collections
@@ -89,6 +94,8 @@ class ImportResourceContainer(
         collectionRepository.insert(bible).blockingGet()
         collectionRepository.insert(ot).blockingGet()
         collectionRepository.insert(nt).blockingGet()
+        collectionRepository.updateParent(ot, bible).blockingGet()
+        collectionRepository.updateParent(nt, bible).blockingGet()
     }
 
 
@@ -109,10 +116,10 @@ class ImportResourceContainer(
         val usfmFile = File(root, project.path)
         if (usfmFile.exists() && usfmFile.extension == "usfm") {
             val book = ParseUsfm(usfmFile).parse()
-            val chapterPadding = book.size.toString().length //length of the string version of the number of chapters
+            val chapterPadding = book.chapters.size.toString().length //length of the string version of the number of chapters
             val bookDir = File(root, project.identifier)
             bookDir.mkdir()
-            for (chapter in book.entries) {
+            for (chapter in book.chapters.entries) {
                 val chapterFile = File(bookDir, chapter.key.toString().padStart(chapterPadding, '0') + ".usfm")
                 val verses = chapter.value.entries.map { it.value }.toTypedArray()
                 verses.sortBy { it.number }
@@ -129,56 +136,84 @@ class ImportResourceContainer(
         project.path = "./${project.identifier}"
     }
 
-    private fun importProject(p: Project, resourceMetadata: ResourceMetadata) {
-        val book = p.mapToCollection(resourceMetadata.type, resourceMetadata)
-        collectionRepository.insert(book).doOnSuccess {
-            book.id = it
-
-            importChapters(p, book, resourceMetadata)
-
-            //associate a parent/child relationship with the project if there is a category entry
-            if (p.categories.isNotEmpty()) {
-
-                collectionRepository.getBySlugAndContainer(p.categories.first(), book.resourceContainer!!)
-                        .map {
-                            collectionRepository.updateParent(book, it)
-                        }
-            }
-
-        }.blockingGet()
+    private fun importProject(p: Project, resourceMetadata: ResourceMetadata): Completable {
+        Single.just(p.mapToCollection(resourceMetadata.type, resourceMetadata))
+                .flatMap({ book: Collection ->
+                    collectionRepository.insert(book)
+                }, {
+                    book: Collection, id: Single<Int> -> Pair(book, id)
+                })
+                .map {
+                    println("${book.slug} setting id to $it")
+                    book.id = it
+                    book
+                }.map {
+                    importChapters(p, it, resourceMetadata).doOnError{ println(it)}.blockingGet()
+                    it
+                }.flatMapCompletable {
+                    val book = it
+                    //associate a parent/child relationship with the project if there is a category entry
+                    if (p.categories.isNotEmpty()) {
+                        collectionRepository.getBySlugAndContainer(p.categories.first(), book.resourceContainer!!)
+                                .doOnError { println(it) }
+                                .flatMapCompletable {
+                                    collectionRepository.updateParent(book, it)
+                                            .doOnError { println(it) }
+                                            .doOnComplete { println("Updated parent of ${book.slug} with id of ${book.id} to ${it.slug} with id of ${it.id}")}
+                                }
+                    } else {
+                        Completable.complete()
+                    }
+                }
     }
 
-    private fun importChapters(project: Project, book: Collection, meta: ResourceMetadata) {
+    private fun importChapters(project: Project, book: Collection, meta: ResourceMetadata): Completable {
         val root = File(meta.path, project.path)
         val files = root.listFiles(FileFilter { it.extension == "usfm" })
-        for (f in files) {
-            val doc = ParseUsfm(f)
-            doc.parse()
-            for (chapter in doc.chapters) {
-                val ch = Collection(
-                        chapter.key,
-                        "${meta.language.slug}_${book.slug}_ch${chapter.key}",
-                        "chapter",
-                        chapter.key.toString(),
-                        meta
-                )
-                collectionRepository.insert(ch).doOnSuccess {
-                    ch.id = it
-                    for (verse in chapter.value.values) {
-                        val vs = Chunk(
-                                verse.number,
-                                "verse",
-                                verse.number,
-                                verse.number,
-                                null
-                        )
-                        chunkRepository.insertForCollection(vs, ch).blockingGet()
-                    }
-                }.blockingGet()
+        val obs = Observable.fromIterable(files.toList())
+        return obs.map {
+            //parse each chapter usfm file
+            ParseUsfm(it).parse()
+        }.flatMap {
+            //iterate over each chapter
+            Observable.fromIterable(it.chapters.toList())
+        }.flatMapSingle {
+            // create a collection out of each chapter to store in the database
+            val chapter = it
+            val ch = Collection(
+                    chapter.first,
+                    "${meta.language.slug}_${book.slug}_ch${chapter.first}",
+                    "chapter",
+                    chapter.first.toString(),
+                    meta
+            )
+            collectionRepository.insert(ch).doOnError { println(it) }.map {
+                ch.id = it //set the id allocated by the repository
+                Pair(chapter, ch) //return both the chapter and the collection
             }
-        }
+        }.map {
+            collectionRepository.updateParent(it.second, book)
+                    .doOnError { println(it) }
+                    .doOnComplete {
+                        println("Updated parent of ${it.second.slug} with id of ${it.second.id} to ${book.slug} with id of ${book.id}")
+                    }.subscribe()
+            it
+        }.flatMap {
+            val chapter = it.first
+            val chapterCollection = it.second
+            Observable.fromIterable(chapter.second.values).flatMapSingle {
+                //map each verse to a chunk and insert
+                val vs = Chunk(
+                        it.number,
+                        "verse",
+                        it.number,
+                        it.number,
+                        null
+                )
+                chunkRepository.insertForCollection(vs, chapterCollection).doOnError { println(it) }
+            }
+        }.toList().toCompletable()
     }
-
 }
 
 private fun Project.mapToCollection(type: String, metadata: ResourceMetadata): Collection {
