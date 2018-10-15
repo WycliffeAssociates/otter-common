@@ -110,47 +110,39 @@ class CreateProject(
                     sourceRepo.getChildren(sourceProject).map { Pair(project, it) }
                 }
                 // Split the chapter list into a stream
-                .flatMapObservable {
-                    val project = it.first
-                    val sourceChapters = it.second
+                .flatMapObservable { (project, sourceChapters) ->
                     Observable.fromIterable(sourceChapters.map { Pair(project, it) })
                 }
                 // Insert each new project chapter
-                .concatMap {
-                    val project = it.first
-                    val sourceChapter = it.second
+                .concatMap { (project, sourceChapter) ->
                     val projectChapter = sourceChapter.copy(id = 0)
-                    insertProjectCollection(projectChapter, sourceChapter, project)
-                            .map { Pair(it, sourceChapter) }.toObservable()
+                    return@concatMap insertProjectCollection(projectChapter, sourceChapter, project)
+                            .map { Pair(it, sourceChapter) }
+                            .toObservable()
                 }
                 // Get all the chunks for the source chapter
-                .concatMap {
-                    val projectChapter = it.first
-                    val sourceChapter = it.second
-                    chunkRepo.getByCollection(sourceChapter).map { Pair(projectChapter, it) }.toObservable()
+                .concatMap { (projectChapter, sourceChapter) ->
+                    chunkRepo
+                            .getByCollection(sourceChapter)
+                            .map { Pair(projectChapter, it) }
+                            .toObservable()
                 }
                 // Split the list of chunks into a stream
-                .concatMap {
-                    val projectChapter = it.first
-                    val chunks = it.second
+                .concatMap { (projectChapter, chunks) ->
                     Observable.fromIterable(chunks.map { Pair(projectChapter, it) })
                 }
                 // Insert each new project chunk
-                .concatMap {
-                    val projectChapter = it.first
-                    val sourceChunk = it.second
+                .concatMap { (projectChapter, sourceChunk) ->
                     val projectChunk = sourceChunk.copy(id = 0, selectedTake = null)
-                    chunkRepo.insertForCollection(projectChunk, projectChapter)
+                    return@concatMap chunkRepo.insertForCollection(projectChunk, projectChapter)
                             .map {
                                 projectChunk.id = it
-                                Pair(sourceChunk, projectChunk)
+                                return@map Pair(sourceChunk, projectChunk)
                             }
                             .toObservable()
                 }
                 // Add the source/target relationship for the chunk
-                .concatMapCompletable {
-                    val sourceChunk = it.first
-                    val projectChunk = it.second
+                .concatMapCompletable { (sourceChunk, projectChunk) ->
                     chunkRepo.updateSources(projectChunk, listOf(sourceChunk))
                 }
     }
