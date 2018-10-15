@@ -5,6 +5,7 @@ import io.reactivex.Observable
 import io.reactivex.Single
 import org.wycliffeassociates.otter.common.data.model.*
 import org.wycliffeassociates.otter.common.data.model.Collection
+import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
 import org.wycliffeassociates.otter.common.persistence.repositories.*
 import java.io.File
 import java.time.LocalDate
@@ -15,7 +16,8 @@ class CreateProject(
         val collectionRepo: ICollectionRepository,
         val projectRepo: IProjectRepository,
         val chunkRepo: IChunkRepository,
-        val metadataRepository: IResourceMetadataRepository
+        val metadataRepository: IResourceMetadataRepository,
+        val directoryProvider: IDirectoryProvider
 ) {
     fun getAllLanguages(): Single<List<Language>> {
         return languageRepo.getAll()
@@ -74,7 +76,7 @@ class CreateProject(
                 "book",
                 sourceMetadata.title,
                 "0.0.1",
-                File("") // TODO: Use valid path
+                directoryProvider.resourceContainerDirectory // TODO: Use valid path
         )
 
         return derivedMetadata
