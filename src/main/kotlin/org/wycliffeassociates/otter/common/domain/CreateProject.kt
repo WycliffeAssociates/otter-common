@@ -84,7 +84,9 @@ class CreateProject(
 
     fun newProject(sourceProject: Collection, targetLanguage: Language): Completable {
         // Some concat maps can be removed when dao synchronization is added
-        val metadata = createProjectResourceMetadata(sourceProject.resourceContainer, targetLanguage)
+        if (sourceProject.resourceContainer == null) throw NullPointerException("Source project has no metadata")
+
+        val metadata = createProjectResourceMetadata(sourceProject.resourceContainer!!, targetLanguage)
         return metadataRepository
                 .insert(metadata)
                 .doOnSuccess {
@@ -92,7 +94,7 @@ class CreateProject(
                 }
                 // Add the link to the source RC metadata
                 .flatMapCompletable {
-                    metadataRepository.addLink(metadata, sourceProject.resourceContainer)
+                    metadataRepository.addLink(metadata, sourceProject.resourceContainer!!)
                 }
                 // Insert the new project with the new metadata
                 .andThen(insertProjectCollection(
