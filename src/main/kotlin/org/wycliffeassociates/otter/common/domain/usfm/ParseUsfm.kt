@@ -2,18 +2,18 @@ package org.wycliffeassociates.otter.common.domain.usfm
 
 import java.io.File
 
-val sep = System.lineSeparator()
+private val sep = System.lineSeparator()
 
-val MARKER_BOOK_NAME = "\\id"
-val MARKER_CHAPTER_NUMBER = "\\c"
-val MARKER_VERSE_NUMBER = "\\v"
-var MARKER_NEW_PARAGRAPH = "\\p"
-var MARKER_SECTION_HEADING = "\\s"
-var MARKER_SECTION_HEADING_ONE = "\\s1"
-var MARKER_SECTION_HEADING_TWO = "\\s2"
-var MARKER_SECTION_HEADING_THREE = "\\s3"
-var MARKER_SECTION_HEADING_FOUR = "\\s4"
-var MARKER_CHUNK = "\\s5"
+private val MARKER_BOOK_NAME = "\\id"
+private val MARKER_CHAPTER_NUMBER = "\\c"
+private val MARKER_VERSE_NUMBER = "\\v"
+private val MARKER_NEW_PARAGRAPH = "\\p"
+private val MARKER_SECTION_HEADING = "\\s"
+private val MARKER_SECTION_HEADING_ONE = "\\s1"
+private val MARKER_SECTION_HEADING_TWO = "\\s2"
+private val MARKER_SECTION_HEADING_THREE = "\\s3"
+private val MARKER_SECTION_HEADING_FOUR = "\\s4"
+private val MARKER_CHUNK = "\\s5"
 
 
 data class Current(var c: Int = 1, var v: Int = 1)
@@ -66,7 +66,7 @@ class ParseUsfm(val file: File) {
             MARKER_SECTION_HEADING_FOUR -> return
             MARKER_CHUNK -> return
             "" -> return
-        // catch styling or formatting
+            // catch styling or formatting
             else -> {
                 if (split[0].length == 1) {
                     // add this to the next coming verse

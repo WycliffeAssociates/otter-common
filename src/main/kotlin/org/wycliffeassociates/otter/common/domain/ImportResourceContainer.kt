@@ -85,14 +85,14 @@ class ImportResourceContainer(
         }.flatMap {
             val resourceMetadata = it
             //metadata id is going to be needed for the collection insert
-            metadataRepository.insert(resourceMetadata).doOnError { println(it) }.map {
+            return@flatMap metadataRepository.insert(resourceMetadata).map {
                 resourceMetadata.id = it
-                resourceMetadata
+                return@map resourceMetadata
             }
         }.flatMapCompletable {
             val resourceMetadata = it
             importBible(resourceMetadata)
-            Observable.fromIterable(rc.manifest.projects).flatMapCompletable {
+            return@flatMapCompletable Observable.fromIterable(rc.manifest.projects).flatMapCompletable {
                 importProject(it, resourceMetadata).doOnError { println(it) }
             }
         }
@@ -181,9 +181,9 @@ class ImportResourceContainer(
                     chapter.first.toString(),
                     meta
             )
-            collectionRepository.insert(ch).map {
+            return@flatMapSingle collectionRepository.insert(ch).map {
                 ch.id = it //set the id allocated by the repository
-                Pair(chapter, ch) //return both the chapter and the collection
+                return@map Pair(chapter, ch) //return both the chapter and the collection
             }
         }.flatMapSingle {
             //update parent, pass the chapter/collection further down the chain
@@ -191,7 +191,7 @@ class ImportResourceContainer(
         }.flatMap {
             val chapter = it.first
             val chapterCollection = it.second
-            Observable.fromIterable(chapter.second.values).flatMapSingle {
+            return@flatMap Observable.fromIterable(chapter.second.values).flatMapSingle {
                 //map each verse to a chunk and insert
                 val vs = Chunk(
                         it.number,
@@ -200,7 +200,7 @@ class ImportResourceContainer(
                         it.number,
                         null
                 )
-                chunkRepository.insertForCollection(vs, chapterCollection)
+                return@flatMapSingle chunkRepository.insertForCollection(vs, chapterCollection)
             }
         }.toList().toCompletable()
     }
