@@ -154,7 +154,7 @@ class ImportResourceContainer(
                         { book: Collection, result: Collection -> Pair(book, result) }
                 ).flatMapSingle { (book, parent): Pair<Collection, Collection> ->
                     val book = book
-                    collectionRepository.updateParent(book, parent).toSingle { Pair(book, parent) }
+                    return@flatMapSingle collectionRepository.updateParent(book, parent).toSingle { Pair(book, parent) }
                 }.flatMapCompletable { (book, res) ->
                     importChapters(p, book, resourceMetadata)
                 }
