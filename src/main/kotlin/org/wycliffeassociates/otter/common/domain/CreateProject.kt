@@ -115,7 +115,7 @@ class CreateProject(
                 }
                 // Insert each new project chapter
                 .concatMap { (project, sourceChapter) ->
-                    val projectChapter = sourceChapter.copy(id = 0)
+                    val projectChapter = sourceChapter.copy(id = 0, resourceContainer = metadata)
                     return@concatMap insertProjectCollection(projectChapter, sourceChapter, project)
                             .map { Pair(it, sourceChapter) }
                             .toObservable()
