@@ -1,14 +1,11 @@
 package org.wycliffeassociates.otter.common.domain
 
-import io.reactivex.Completable
-import io.reactivex.Observable
-import io.reactivex.Single
+import io.reactivex.*
 import org.wycliffeassociates.otter.common.data.model.Chunk
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Language
 import org.wycliffeassociates.otter.common.data.model.ResourceMetadata
 import org.wycliffeassociates.otter.common.domain.usfm.ParseUsfm
-import org.wycliffeassociates.otter.common.domain.usfm.UsfmDocument
 import org.wycliffeassociates.otter.common.persistence.repositories.*
 
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
@@ -30,6 +27,22 @@ class ImportResourceContainer(
         private val chunkRepository: IChunkRepository,
         directoryProvider: IDirectoryProvider
 ) {
+
+    //TODO: Remove this when Bible, OT, NT are included as part of a resource container
+    fun importBible(meta: ResourceMetadata) {
+        //Initialize bible and testament collections
+        val bible = Collection(1, "bible", "bible", "Bible", meta)
+        val ot = Collection(1, "bible-ot", "testament", "Old Testament", meta)
+        val nt = Collection(2, "bible-nt", "testament", "New Testament", meta)
+        val bibleid = collectionRepository.insert(bible).blockingGet()
+        bible.id = bibleid
+        val otid = collectionRepository.insert(ot).blockingGet()
+        ot.id = otid
+        val ntid = collectionRepository.insert(nt).blockingGet()
+        nt.id = ntid
+        collectionRepository.updateParent(ot, bible).subscribe()
+        collectionRepository.updateParent(nt, bible).subscribe()
+    }
 
     private val rcDirectory = File(directoryProvider.getAppDataDirectory(), "rc")
 
@@ -85,20 +98,6 @@ class ImportResourceContainer(
         }
     }
 
-
-    fun importBible(meta: ResourceMetadata) {
-        //Initialize bible and testament collections
-        val bible = Collection(1, "bible", "bible", "Bible", meta)
-        val ot = Collection(1, "bible-ot", "testament", "Old Testament", meta)
-        val nt = Collection(2, "bible-nt", "testament", "New Testament", meta)
-        collectionRepository.insert(bible).blockingGet()
-        collectionRepository.insert(ot).blockingGet()
-        collectionRepository.insert(nt).blockingGet()
-        collectionRepository.updateParent(ot, bible).blockingGet()
-        collectionRepository.updateParent(nt, bible).blockingGet()
-    }
-
-
     fun expandResourceContainerBundle(rc: ResourceContainer) {
         val dc = rc.manifest.dublinCore
         dc.type = "book"
@@ -137,34 +136,29 @@ class ImportResourceContainer(
     }
 
     private fun importProject(p: Project, resourceMetadata: ResourceMetadata): Completable {
-        Single.just(p.mapToCollection(resourceMetadata.type, resourceMetadata))
-                .flatMap({ book: Collection ->
-                    collectionRepository.insert(book)
-                }, {
-                    book: Collection, id: Single<Int> -> Pair(book, id)
-                })
+        return Observable.just(p.mapToCollection(resourceMetadata.type, resourceMetadata))
+                .flatMap(
+                        { book ->
+                            collectionRepository.insert(book).toObservable()
+                        },
+                        { book: Collection, result: Int -> Pair(book, result) }
+                )
                 .map {
-                    println("${book.slug} setting id to $it")
-                    book.id = it
-                    book
-                }.map {
-                    importChapters(p, it, resourceMetadata).doOnError{ println(it)}.blockingGet()
-                    it
-                }.flatMapCompletable {
-                    val book = it
-                    //associate a parent/child relationship with the project if there is a category entry
-                    if (p.categories.isNotEmpty()) {
-                        collectionRepository.getBySlugAndContainer(p.categories.first(), book.resourceContainer!!)
-                                .doOnError { println(it) }
-                                .flatMapCompletable {
-                                    collectionRepository.updateParent(book, it)
-                                            .doOnError { println(it) }
-                                            .doOnComplete { println("Updated parent of ${book.slug} with id of ${book.id} to ${it.slug} with id of ${it.id}")}
-                                }
-                    } else {
-                        Completable.complete()
-                    }
+                    val book = it.first
+                    book.id = it.second
+                    return@map book
+                }.flatMap(
+                        { book: Collection ->
+                            collectionRepository.getBySlugAndContainer(p.categories.first(), book.resourceContainer!!).toObservable()
+                        },
+                        { book: Collection, result: Collection -> Pair(book, result) }
+                ).flatMapSingle { (book, parent): Pair<Collection, Collection> ->
+                    val book = book
+                    collectionRepository.updateParent(book, parent).toSingle { Pair(book, parent) }
+                }.flatMapCompletable { (book, res) ->
+                    importChapters(p, book, resourceMetadata)
                 }
+
     }
 
     private fun importChapters(project: Project, book: Collection, meta: ResourceMetadata): Completable {
@@ -187,17 +181,13 @@ class ImportResourceContainer(
                     chapter.first.toString(),
                     meta
             )
-            collectionRepository.insert(ch).doOnError { println(it) }.map {
+            collectionRepository.insert(ch).map {
                 ch.id = it //set the id allocated by the repository
                 Pair(chapter, ch) //return both the chapter and the collection
             }
-        }.map {
-            collectionRepository.updateParent(it.second, book)
-                    .doOnError { println(it) }
-                    .doOnComplete {
-                        println("Updated parent of ${it.second.slug} with id of ${it.second.id} to ${book.slug} with id of ${book.id}")
-                    }.subscribe()
-            it
+        }.flatMapSingle {
+            //update parent, pass the chapter/collection further down the chain
+            collectionRepository.updateParent(it.second, book).toSingle { it }
         }.flatMap {
             val chapter = it.first
             val chapterCollection = it.second
@@ -210,7 +200,7 @@ class ImportResourceContainer(
                         it.number,
                         null
                 )
-                chunkRepository.insertForCollection(vs, chapterCollection).doOnError { println(it) }
+                chunkRepository.insertForCollection(vs, chapterCollection)
             }
         }.toList().toCompletable()
     }
