@@ -1,6 +1,8 @@
 package org.wycliffeassociates.otter.common.domain
 
 import io.reactivex.*
+import io.reactivex.internal.schedulers.SchedulerPoolFactory
+import io.reactivex.schedulers.Schedulers
 import org.wycliffeassociates.otter.common.data.model.Chunk
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Language
@@ -19,6 +21,7 @@ import java.io.FileFilter
 import java.io.IOException
 import java.time.LocalDate
 import java.time.ZonedDateTime
+import java.util.concurrent.Executors
 
 class ImportResourceContainer(
         private val languageRepository: ILanguageRepository,
@@ -157,7 +160,7 @@ class ImportResourceContainer(
                     return@flatMapSingle collectionRepository.updateParent(book, parent).toSingle { Pair(book, parent) }
                 }.flatMapCompletable { (book, res) ->
                     importChapters(p, book, resourceMetadata)
-                }
+                }.subscribeOn(Schedulers.io())
 
     }
 
@@ -171,7 +174,7 @@ class ImportResourceContainer(
         }.flatMap {
             //iterate over each chapter
             Observable.fromIterable(it.chapters.toList())
-        }.flatMapSingle {
+        }.map {
             // create a collection out of each chapter to store in the database
             val chapter = it
             val ch = Collection(
@@ -181,17 +184,17 @@ class ImportResourceContainer(
                     chapter.first.toString(),
                     meta
             )
-            return@flatMapSingle collectionRepository.insert(ch).map {
+            return@map collectionRepository.insert(ch).map {
                 ch.id = it //set the id allocated by the repository
                 return@map Pair(chapter, ch) //return both the chapter and the collection
-            }
-        }.flatMapSingle {
+            }.blockingGet()
+        }.map {
             //update parent, pass the chapter/collection further down the chain
-            collectionRepository.updateParent(it.second, book).toSingle { it }
-        }.flatMap {
+            collectionRepository.updateParent(it.second, book).toSingle { it }.blockingGet()
+        }.map {
             val chapter = it.first
             val chapterCollection = it.second
-            return@flatMap Observable.fromIterable(chapter.second.values).flatMapSingle {
+            return@map Observable.fromIterable(chapter.second.values).map {
                 //map each verse to a chunk and insert
                 val vs = Chunk(
                         it.number,
@@ -200,8 +203,8 @@ class ImportResourceContainer(
                         it.number,
                         null
                 )
-                return@flatMapSingle chunkRepository.insertForCollection(vs, chapterCollection)
-            }
+                chunkRepository.insertForCollection(vs, chapterCollection).blockingGet()
+            }.toList().blockingGet()
         }.toList().toCompletable()
     }
 }
