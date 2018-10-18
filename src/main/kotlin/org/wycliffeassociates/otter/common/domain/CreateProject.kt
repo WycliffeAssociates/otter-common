@@ -104,66 +104,6 @@ class CreateProject(
                             .duplicateCollectionAndContent(sourceProject, it)
                             .toCompletable()
                 }
-//        return metadataRepository
-//                .insert(metadata)
-//                .doOnSuccess {
-//                    metadata.id = it
-//                }
-//                // Add the link to the source RC metadata
-//                .flatMapCompletable {
-//                    metadataRepository.addLink(metadata, sourceProject.resourceContainer!!)
-//                }
-//                // Insert the new project with the new metadata
-//                .andThen(insertProjectCollection(
-//                        sourceProject.copy(
-//                                id = 0,
-//                                labelKey = "project",
-//                                resourceContainer = metadata
-//                        ),
-//                        sourceProject
-//                ))
-//                // Get the chapter
-//                // No need to concatMap since only one thing in the stream (a Single)
-//                // No issue with order
-//                .flatMap { project ->
-//                    sourceRepo.getChildren(sourceProject).map { Pair(project, it) }
-//                }
-//                // Split the chapter list into a stream
-//                .flatMapObservable { (project, sourceChapters) ->
-//                    Observable.fromIterable(sourceChapters.map { Pair(project, it) })
-//                }
-//                // Insert each new project chapter
-//                .concatMap { (project, sourceChapter) ->
-//                    val projectChapter = sourceChapter.copy(id = 0, resourceContainer = metadata)
-//                    return@concatMap insertProjectCollection(projectChapter, sourceChapter, project)
-//                            .map { Pair(it, sourceChapter) }
-//                            .toObservable()
-//                }
-//                // Get all the chunks for the source chapter
-//                .concatMap { (projectChapter, sourceChapter) ->
-//                    chunkRepo
-//                            .getByCollection(sourceChapter)
-//                            .map { Pair(projectChapter, it) }
-//                            .toObservable()
-//                }
-//                // Split the list of chunks into a stream
-//                .concatMap { (projectChapter, chunks) ->
-//                    Observable.fromIterable(chunks.map { Pair(projectChapter, it) })
-//                }
-//                // Insert each new project chunk
-//                .concatMap { (projectChapter, sourceChunk) ->
-//                    val projectChunk = sourceChunk.copy(id = 0, selectedTake = null)
-//                    return@concatMap chunkRepo.insertForCollection(projectChunk, projectChapter)
-//                            .map {
-//                                projectChunk.id = it
-//                                return@map Pair(sourceChunk, projectChunk)
-//                            }
-//                            .toObservable()
-//                }
-//                // Add the source/target relationship for the chunk
-//                .concatMapCompletable { (sourceChunk, projectChunk) ->
-//                    chunkRepo.updateSources(projectChunk, listOf(sourceChunk))
-//                }
     }
 
     fun getResourceChildren(identifier: SourceCollection): Single<List<Collection>> {
