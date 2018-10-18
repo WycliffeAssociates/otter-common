@@ -30,7 +30,7 @@ class ImportResourceContainer(
     fun import(file: File): Completable {
         return when {
             file.isDirectory -> importDirectory(file)
-            file.extension == "zip" -> Single
+            file.extension.toLowerCase() == "zip" -> Single
                     .fromCallable {
                         UnZipResourceContainer(file, rcDirectory.absoluteFile).unzip()
                     }
