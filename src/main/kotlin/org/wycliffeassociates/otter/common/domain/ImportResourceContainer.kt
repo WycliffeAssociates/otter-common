@@ -1,7 +1,6 @@
 package org.wycliffeassociates.otter.common.domain
 
 import io.reactivex.*
-import io.reactivex.internal.schedulers.SchedulerPoolFactory
 import io.reactivex.schedulers.Schedulers
 import org.wycliffeassociates.otter.common.data.model.*
 import org.wycliffeassociates.otter.common.data.model.Collection
@@ -19,8 +18,6 @@ import java.io.File
 import java.io.FileFilter
 import java.io.IOException
 import java.time.LocalDate
-import java.time.ZonedDateTime
-import java.util.concurrent.Executors
 
 class ImportResourceContainer(
         private val languageRepository: ILanguageRepository,
@@ -88,8 +85,8 @@ class ImportResourceContainer(
                                 }
                                 .flatMapCompletable { resourceMetadata ->
                                     // Create empty lists to hold the testaments
-                                    val oldTestamentBooks = mutableListOf<RelatedCollectionContent>()
-                                    val newTestamentBooks = mutableListOf<RelatedCollectionContent>()
+                                    val oldTestamentBooks = mutableListOf<RelatedCollection>()
+                                    val newTestamentBooks = mutableListOf<RelatedCollection>()
 
                                     // Loop through each project in the manifest
                                     for (project in rc.manifest.projects) {
@@ -111,7 +108,7 @@ class ImportResourceContainer(
                                     )
 
                                     // Insert the root into the database
-                                    return@flatMapCompletable collectionRepository.insertRelatedCollectionContent(root)
+                                    return@flatMapCompletable collectionRepository.insertRelatedCollection(root)
                                 }
                 )
                 .subscribeOn(Schedulers.io())
@@ -136,7 +133,7 @@ class ImportResourceContainer(
             book: Collection,
             file: File,
             resourceMetadata: ResourceMetadata
-    ): RelatedCollectionContent {
+    ): RelatedCollection {
         val usfmDoc = ParseUsfm(file).parse() // Parse the USFM document
         val chapter = usfmDoc.chapters.toList().first() // Get the first (and only) chapter
 
@@ -156,7 +153,7 @@ class ImportResourceContainer(
             verses.add(verseChunk)
         }
 
-        return RelatedCollectionContent(
+        return RelatedCollection(
                 chapCollection,
                 listOf(),
                 verses
@@ -166,9 +163,9 @@ class ImportResourceContainer(
     private fun buildBookFromProject(
             project: Project,
             resourceMetadata: ResourceMetadata
-    ): RelatedCollectionContent {
+    ): RelatedCollection {
         val book = project.mapToCollection(resourceMetadata.type, resourceMetadata)
-        val chapters = mutableListOf<RelatedCollectionContent>()
+        val chapters = mutableListOf<RelatedCollection>()
 
         // Get all the chapter files (assume book format)
         val projectsDir = File(resourceMetadata.path, project.path)
@@ -179,7 +176,7 @@ class ImportResourceContainer(
             chapters.add(chapter)
         }
 
-        return RelatedCollectionContent(
+        return RelatedCollection(
                 book,
                 chapters,
                 listOf()
@@ -188,22 +185,22 @@ class ImportResourceContainer(
 
     // TODO: Remove this when Bible, OT, NT are included as part of a resource container
     private fun buildBibleFromTestaments(
-            otBooks: List<RelatedCollectionContent>,
-            ntBooks: List<RelatedCollectionContent>,
+            otBooks: List<RelatedCollection>,
+            ntBooks: List<RelatedCollection>,
             resourceMetadata: ResourceMetadata
-    ): RelatedCollectionContent {
+    ): RelatedCollection {
         // Create the two testaments and combine them into a Bible
-        val oldTestament = RelatedCollectionContent(
+        val oldTestament = RelatedCollection(
                 Collection(1, "bible-ot", "testament", "Old Testament", resourceMetadata),
                 otBooks,
                 listOf()
         )
-        val newTestament = RelatedCollectionContent(
+        val newTestament = RelatedCollection(
                 Collection(1, "bible-nt", "testament", "New Testament", resourceMetadata),
                 ntBooks,
                 listOf()
         )
-        return RelatedCollectionContent(
+        return RelatedCollection(
                 Collection(1, "bible", "bible", "Bible", resourceMetadata),
                 listOf(oldTestament, newTestament),
                 listOf()
