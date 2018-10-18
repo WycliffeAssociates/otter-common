@@ -30,6 +30,13 @@ class ImportResourceContainer(
     fun import(file: File): Completable {
         return when {
             file.isDirectory -> importDirectory(file)
+            file.extension == "zip" -> Single
+                    .fromCallable {
+                        UnZipResourceContainer(file, rcDirectory.absoluteFile).unzip()
+                    }
+                    .flatMapCompletable {
+                        importDirectory(it)
+                    }
             else -> Completable.complete()
         }
     }
