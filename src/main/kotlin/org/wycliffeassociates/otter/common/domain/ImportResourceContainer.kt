@@ -6,6 +6,7 @@ import io.reactivex.schedulers.Schedulers
 import org.wycliffeassociates.otter.common.data.model.*
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.domain.usfm.ParseUsfm
+import org.wycliffeassociates.otter.common.domain.usfm.Verse
 import org.wycliffeassociates.otter.common.persistence.repositories.*
 
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
@@ -25,7 +26,6 @@ class ImportResourceContainer(
         private val languageRepository: ILanguageRepository,
         private val metadataRepository: IResourceMetadataRepository,
         private val collectionRepository: ICollectionRepository,
-        private val chunkRepository: IChunkRepository,
         directoryProvider: IDirectoryProvider
 ) {
     private val rcDirectory = File(directoryProvider.getAppDataDirectory(), "rc")
@@ -38,16 +38,19 @@ class ImportResourceContainer(
     }
 
     private fun importDirectory(dir: File): Completable {
-        if (validateResourceContainer(dir)) {
+        return if (validateResourceContainer(dir)) {
+            // Copy the file to the internal directory
             if (dir.parentFile?.absolutePath != rcDirectory.absolutePath) {
                 val success = dir.copyRecursively(File(rcDirectory, dir.name), true)
                 if (!success) {
                     throw IOException("Could not copy resource container ${dir.name} to resource container directory")
                 }
             }
-            return importResourceContainer(File(rcDirectory, dir.name))
+
+            // Import the directory into the database
+            importResourceContainer(File(rcDirectory, dir.name))
         } else {
-            return Completable.error(RCException("Missing manifest.yaml"))
+            Completable.error(RCException("Missing manifest.yaml"))
         }
     }
 
@@ -60,100 +63,151 @@ class ImportResourceContainer(
         val rc = ResourceContainer.load(container)
         val dc = rc.manifest.dublinCore
 
-
-
-        return Completable.fromAction {
-            if (dc.type == "bundle" && dc.format == "text/usfm") {
-                expandResourceContainerBundle(rc)
-            }
-        }.andThen(languageRepository.getBySlug(dc.language.identifier).map {
-            dc.mapToMetadata(container, it)
-        }.flatMap {
-            val resourceMetadata = it
-            //metadata id is going to be needed for the collection insert
-            return@flatMap metadataRepository.insert(resourceMetadata).map {
-                resourceMetadata.id = it
-                return@map resourceMetadata
-            }
-        }.flatMapCompletable {
-            val resourceMetadata = it
-
-            val oldTestamentBooks = mutableListOf<RelatedCollectionContent>()
-            val newTestamentBooks = mutableListOf<RelatedCollectionContent>()
-
-            for (project in rc.manifest.projects) {
-                val projCollection = project.mapToCollection(resourceMetadata.type, resourceMetadata)
-                val chapters = mutableListOf<RelatedCollectionContent>()
-                // Get all the chapters
-                val projectsDir = File(resourceMetadata.path, project.path)
-                val files = projectsDir.listFiles(FileFilter { it.extension == "usfm" })
-                for (file in files) {
-                    val usfmDoc = ParseUsfm(file).parse()
-                    for (chapter in usfmDoc.chapters.toList()) {
-                        val chapCollection = Collection(
-                                chapter.first,
-                                "${resourceMetadata.language.slug}_${projCollection.slug}_ch${chapter.first}",
-                                "chapter",
-                                chapter.first.toString(),
-                                resourceMetadata
-                        )
-
-                        // Get all the verses
-                        val verses = mutableListOf<Chunk>()
-                        for (verse in chapter.second.values) {
-                            val verseChunk = Chunk(
-                                    verse.number,
-                                    "verse",
-                                    verse.number,
-                                    verse.number,
-                                    null
-                            )
-                            verses.add(verseChunk)
-                        }
-
-                        val relatedChapter = RelatedCollectionContent(
-                                chapCollection,
-                                listOf(),
-                                verses
-                        )
-
-                        chapters.add(relatedChapter)
+        return Completable
+                .fromAction {
+                    // Expand the RC if it is a bundle
+                    if (dc.type == "bundle" && dc.format == "text/usfm") {
+                        expandResourceContainerBundle(rc)
                     }
                 }
+                .andThen(
+                        // Get the language for this resource container
+                        languageRepository.getBySlug(dc.language.identifier)
+                                .map {
+                                    // Create the resource metadata
+                                    dc.mapToMetadata(container, it)
+                                }
+                                .flatMap { resourceMetadata ->
+                                    // Insert the metadata into the database
+                                    return@flatMap metadataRepository
+                                            .insert(resourceMetadata)
+                                            .map {
+                                                resourceMetadata.id = it
+                                                return@map resourceMetadata
+                                            }
+                                }
+                                .flatMapCompletable { resourceMetadata ->
+                                    // Create empty lists to hold the testaments
+                                    val oldTestamentBooks = mutableListOf<RelatedCollectionContent>()
+                                    val newTestamentBooks = mutableListOf<RelatedCollectionContent>()
 
-                val relatedProject = RelatedCollectionContent(
-                        projCollection,
-                        chapters,
-                        listOf()
+                                    // Loop through each project in the manifest
+                                    for (project in rc.manifest.projects) {
+                                        // Build the book from the project and metadata
+                                        val relatedBook = buildBookFromProject(project, resourceMetadata)
+
+                                        // Put with the right testament
+                                        when (project.categories.first()) {
+                                            "bible-ot" -> oldTestamentBooks.add(relatedBook)
+                                            "bible-nt" -> newTestamentBooks.add(relatedBook)
+                                        }
+                                    }
+
+                                    // Create the Bible data from the testaments
+                                    val root = buildBibleFromTestaments(
+                                            oldTestamentBooks,
+                                            newTestamentBooks,
+                                            resourceMetadata
+                                    )
+
+                                    // Insert the root into the database
+                                    return@flatMapCompletable collectionRepository.insertRelatedCollectionContent(root)
+                                }
                 )
+                .subscribeOn(Schedulers.io())
+    }
 
-                // Put with the right testament
-                when (project.categories.first()) {
-                    "bible-ot" -> oldTestamentBooks.add(relatedProject)
-                    "bible-nt" -> newTestamentBooks.add(relatedProject)
-                }
-            }
+    // Build a verse chunk from a USFM verse
+    private fun buildVerseChunk(
+            verse: Verse
+    ): Chunk {
+        return Chunk(
+                verse.number,
+                "verse",
+                verse.number,
+                verse.number,
+                null
+        )
+    }
 
-            // Create the Bible data
-            // TODO: Remove this when Bible, OT, NT are included as part of a resource container
-            val oldTestament = RelatedCollectionContent(
-                    Collection(1, "bible-ot", "testament", "Old Testament", resourceMetadata),
-                    oldTestamentBooks,
-                    listOf()
-            )
-            val newTestament = RelatedCollectionContent(
-                    Collection(1, "bible-nt", "testament", "New Testament", resourceMetadata),
-                    newTestamentBooks,
-                    listOf()
-            )
-            val root = RelatedCollectionContent(
-                    Collection(1, "bible", "bible", "Bible", resourceMetadata),
-                    listOf(oldTestament, newTestament),
-                    listOf()
-            )
-            // Insert the root
-            return@flatMapCompletable collectionRepository.insertRelatedCollectionContent(root)
-        }).subscribeOn(Schedulers.io())
+    // Build a single chapter from a USFM file
+    // Assumes only one chapter in each USFM (project in book format)
+    private fun buildChapterFromUsfmFile(
+            book: Collection,
+            file: File,
+            resourceMetadata: ResourceMetadata
+    ): RelatedCollectionContent {
+        val usfmDoc = ParseUsfm(file).parse() // Parse the USFM document
+        val chapter = usfmDoc.chapters.toList().first() // Get the first (and only) chapter
+
+        // Create the chapter collection
+        val chapCollection = Collection(
+                chapter.first,
+                "${resourceMetadata.language.slug}_${book.slug}_ch${chapter.first}",
+                "chapter",
+                chapter.first.toString(),
+                resourceMetadata
+        )
+
+        // Get all the verses
+        val verses = mutableListOf<Chunk>()
+        for (verse in chapter.second.values) {
+            val verseChunk = buildVerseChunk(verse)
+            verses.add(verseChunk)
+        }
+
+        return RelatedCollectionContent(
+                chapCollection,
+                listOf(),
+                verses
+        )
+    }
+
+    private fun buildBookFromProject(
+            project: Project,
+            resourceMetadata: ResourceMetadata
+    ): RelatedCollectionContent {
+        val book = project.mapToCollection(resourceMetadata.type, resourceMetadata)
+        val chapters = mutableListOf<RelatedCollectionContent>()
+
+        // Get all the chapter files (assume book format)
+        val projectsDir = File(resourceMetadata.path, project.path)
+        val files = projectsDir.listFiles(FileFilter { it.extension == "usfm" })
+        for (file in files) {
+            // Create and add the chapter
+            val chapter = buildChapterFromUsfmFile(book, file, resourceMetadata)
+            chapters.add(chapter)
+        }
+
+        return RelatedCollectionContent(
+                book,
+                chapters,
+                listOf()
+        )
+    }
+
+    // TODO: Remove this when Bible, OT, NT are included as part of a resource container
+    private fun buildBibleFromTestaments(
+            otBooks: List<RelatedCollectionContent>,
+            ntBooks: List<RelatedCollectionContent>,
+            resourceMetadata: ResourceMetadata
+    ): RelatedCollectionContent {
+        // Create the two testaments and combine them into a Bible
+        val oldTestament = RelatedCollectionContent(
+                Collection(1, "bible-ot", "testament", "Old Testament", resourceMetadata),
+                otBooks,
+                listOf()
+        )
+        val newTestament = RelatedCollectionContent(
+                Collection(1, "bible-nt", "testament", "New Testament", resourceMetadata),
+                ntBooks,
+                listOf()
+        )
+        return RelatedCollectionContent(
+                Collection(1, "bible", "bible", "Bible", resourceMetadata),
+                listOf(oldTestament, newTestament),
+                listOf()
+        )
     }
 
     fun expandResourceContainerBundle(rc: ResourceContainer) {
