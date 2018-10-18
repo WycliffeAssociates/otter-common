@@ -8,6 +8,7 @@ class UnZipResourceContainer(
         private val zippedContainer: File,
         private val destDirectory: File
 ) {
+    // Adapted from https://stackoverflow.com/questions/46627357/unzip-a-file-in-kotlin-script-kts
     fun unzip(): File {
         val zipFile = ZipFile(zippedContainer)
         var root: File? = null
