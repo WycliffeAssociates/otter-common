@@ -52,7 +52,7 @@ class ProjectPageActions(
                 .map { numOfTakes ->
                     // Create a file for this take
                     val takeFile = directoryProvider
-                            .getProjectAudioDirectory(project, listOf(chapter))
+                            .getProjectAudioDirectory(project, chapter.titleKey.toInt(), chunk.start)
                             .resolve(File("chunk${chunk.sort}_take${numOfTakes + 1}.wav"))
 
                     val newTake = Take(
