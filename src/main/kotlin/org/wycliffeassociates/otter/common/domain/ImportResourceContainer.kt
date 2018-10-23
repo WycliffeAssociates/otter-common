@@ -216,7 +216,7 @@ private fun Project.mapToCollection(type: String, metadata: ResourceMetadata): C
     )
 }
 
-private fun DublinCore.mapToMetadata(dir: File, lang: Language): ResourceMetadata {
+fun DublinCore.mapToMetadata(dir: File, lang: Language): ResourceMetadata {
     val (issuedDate, modifiedDate) = listOf(issued, modified)
             .map {
                 // String could be in any of [W3 ISO8601 profile](https://www.w3.org/TR/NOTE-datetime)
