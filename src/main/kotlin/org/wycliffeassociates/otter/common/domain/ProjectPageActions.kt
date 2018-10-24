@@ -39,6 +39,14 @@ class ProjectPageActions(
                 }
     }
 
+    fun getHighestTakeNumber(chunk: Chunk): Single<Int> {
+        return takeRepo
+                .getByChunk(chunk)
+                .map { takes ->
+                    takes.maxBy { it.number }?.number ?: 0
+                }
+    }
+
     fun insertTake(take: Take, chunk: Chunk): Single<Int> {
         return takeRepo.insertForChunk(take, chunk)
     }
@@ -48,17 +56,41 @@ class ProjectPageActions(
     }
 
     fun createNewTake(chunk: Chunk, project: Collection, chapter: Collection): Single<Take> {
-        return getTakeCount(chunk)
-                .map { numOfTakes ->
+        return getHighestTakeNumber(chunk)
+                .map { highestNumber ->
                     // Create a file for this take
+                    val languageSlug = project.resourceContainer?.language?.slug ?: ""
+                    val rcSlug = project.resourceContainer?.identifier ?: ""
+                    val bookNumber = "%02d".format(
+                            // Handle book number offset
+                            if (project.sort > 39) project.sort + 1 else project.sort
+                    )
+                    val bookSlug = project.slug
+                    val chapterNumber = "%02d".format(chapter.titleKey.toInt())
+                    val verseNumber = if (chunk.start == chunk.end) {
+                        "%02d".format(chunk.start)
+                    } else {
+                        "%02d-%02d".format(chunk.start, chunk.end)
+                    }
+                    val takeNumber = "%02d".format(highestNumber + 1)
+                    val filename = listOf(
+                            languageSlug,
+                            rcSlug,
+                            "b$bookNumber",
+                            bookSlug,
+                            "c$chapterNumber",
+                            "v$verseNumber",
+                            "t$takeNumber"
+                    ).joinToString("_", postfix = ".wav")
+
                     val takeFile = directoryProvider
-                            .getProjectAudioDirectory(project, chapter.titleKey.toInt(), chunk.start)
-                            .resolve(File("chunk${chunk.sort}_take${numOfTakes + 1}.wav"))
+                            .getProjectAudioDirectory(project, chapter.titleKey.toInt())
+                            .resolve(File(filename))
 
                     val newTake = Take(
                             takeFile.name,
                             takeFile,
-                            numOfTakes + 1,
+                            highestNumber + 1,
                             LocalDate.now(),
                             false,
                             listOf() // No markers

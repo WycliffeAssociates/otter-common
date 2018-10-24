@@ -12,7 +12,7 @@ interface IDirectoryProvider {
     fun getAppDataDirectory(appendedPath: String = "") : File
 
     // Create the directory for project audio
-    fun getProjectAudioDirectory(book: Collection, chapterNumber: Int, chunkNumber: Int): File
+    fun getProjectAudioDirectory(book: Collection, chapterNumber: Int): File
 
     val resourceContainerDirectory: File
     val userProfileImageDirectory: File
