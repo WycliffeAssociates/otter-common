@@ -1,21 +1,24 @@
 package org.wycliffeassociates.otter.common.domain
 
 import io.reactivex.*
+import org.wycliffeassociates.otter.common.collections.tree.Tree
+import org.wycliffeassociates.otter.common.collections.tree.TreeNode
 import org.wycliffeassociates.otter.common.data.model.Chunk
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.ResourceMetadata
-import org.wycliffeassociates.otter.common.domain.mapper.mapToMetadata
 import org.wycliffeassociates.otter.common.domain.usfm.ParseUsfm
 import org.wycliffeassociates.otter.common.persistence.repositories.*
 
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
+import org.wycliffeassociates.resourcecontainer.entity.Manifest
 import org.wycliffeassociates.resourcecontainer.entity.Project
 import org.wycliffeassociates.resourcecontainer.errors.RCException
 
 import java.io.File
 import java.io.FileFilter
 import java.io.IOException
+
 
 class ImportResourceContainer(
         private val languageRepository: ILanguageRepository,
@@ -77,22 +80,59 @@ class ImportResourceContainer(
             expandResourceContainerBundle(rc)
         }
 
-        return languageRepository.getBySlug(dc.language.identifier).map {
-            dc.mapToMetadata(container, it)
-        }.flatMap {
-            val resourceMetadata = it
-            //metadata id is going to be needed for the collection insert
-            return@flatMap metadataRepository.insert(resourceMetadata).map {
-                resourceMetadata.id = it
-                return@map resourceMetadata
-            }
-        }.flatMapCompletable {
-            val resourceMetadata = it
-            importBible(resourceMetadata)
-            return@flatMapCompletable Observable.fromIterable(rc.manifest.projects).flatMapCompletable {
-                importProject(it, resourceMetadata).doOnError { println(it) }
-            }
+        val tree = constructContainerTree(rc)
+        return collectionRepository.importResourceContainer(tree, dc.language.identifier)
+    }
+
+    private fun constructContainerTree(rc: ResourceContainer): Tree {
+        val root = constructRoot(rc)
+        val categories = getCategories(rc)
+        root.addAll(categories.map { Tree(it) })
+        for (category in root.children) {
+            val projects = getProjectsInCategory(rc.manifest, (category.value as Collection).slug)
+            val projectTrees = constructContentTrees(projects, rc)
+            (category as Tree).addAll(projectTrees)
         }
+        val projects = getProjectsWithoutCategory(rc.manifest)
+        val projectTrees = constructContentTrees(projects, rc)
+        root.addAll(projectTrees)
+        return root
+    }
+
+    private fun constructContentTrees(projects: List<Project>, rc: ResourceContainer): List<Tree> {
+        val projectTrees = projects.map { Tree(it.mapToCollection(rc.type())) }
+        for ((idx, project) in projects.withIndex()) {
+            val content = getChunksInProject(project)
+            projectTrees[idx].addAll(content.map { TreeNode(it) })
+        }
+        return projectTrees
+    }
+
+    private fun constructRoot(rc: ResourceContainer): Tree {
+        val dc = rc.manifest.dublinCore
+        val slug = dc.identifier
+        val title = dc.title
+        val label = dc.type
+        val collection = Collection(0, slug, label, title, null)
+        return Tree(collection)
+    }
+
+    private fun getChunksInProject(project: Project): List<Chunk> {
+        TODO()
+    }
+
+    private fun getCategories(rc: ResourceContainer): List<Collection> {
+        TODO()
+    }
+
+    private fun getProjectsInCategory(manifest: Manifest, categorySlug: String): List<Project> {
+        val projects = manifest.projects.filter { it.categories.contains(categorySlug) }
+        return projects
+    }
+
+    private fun getProjectsWithoutCategory(manifest: Manifest): List<Project> {
+        val projects = manifest.projects.filter { it.categories.isEmpty() }
+        return projects
     }
 
     fun expandResourceContainerBundle(rc: ResourceContainer) {
@@ -203,7 +243,7 @@ class ImportResourceContainer(
     }
 }
 
-private fun Project.mapToCollection(type: String, metadata: ResourceMetadata): Collection {
+private fun Project.mapToCollection(type: String, metadata: ResourceMetadata? = null): Collection {
     return Collection(
             sort,
             identifier,
