@@ -5,8 +5,13 @@ import io.reactivex.Observable
 import io.reactivex.Single
 import org.wycliffeassociates.otter.common.data.model.*
 import org.wycliffeassociates.otter.common.data.model.Collection
+import org.wycliffeassociates.otter.common.domain.mapper.mapToMetadata
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
 import org.wycliffeassociates.otter.common.persistence.repositories.*
+import org.wycliffeassociates.resourcecontainer.ResourceContainer
+import org.wycliffeassociates.resourcecontainer.entity.dublincore
+import org.wycliffeassociates.resourcecontainer.entity.language
+import org.wycliffeassociates.resourcecontainer.entity.manifest
 import java.io.File
 import java.time.LocalDate
 
@@ -61,25 +66,32 @@ class CreateProject(
             sourceMetadata: ResourceMetadata,
             targetLanguage: Language
     ): ResourceMetadata {
-        // Does not actually create RC on disk
-        val derivedMetadata = ResourceMetadata(
-                sourceMetadata.conformsTo,
-                "user",
-                "",
-                "",
-                sourceMetadata.identifier,
-                LocalDate.now(),
-                targetLanguage,
-                LocalDate.now(),
-                "",
-                sourceMetadata.subject,
-                "book",
-                sourceMetadata.title,
-                "0.0.1",
-                directoryProvider.resourceContainerDirectory // TODO: Use valid path
-        )
 
-        return derivedMetadata
+        val projectDir = File(directoryProvider.resourceContainerDirectory, "${targetLanguage.slug}_${sourceMetadata.identifier}")
+        val rc = ResourceContainer.create(projectDir)
+                {
+                       manifest = manifest {
+                           dublinCore = dublincore {
+                               identifier = sourceMetadata.identifier
+                               issued = LocalDate.now().toString()
+                               modified = LocalDate.now().toString()
+                               language = org.wycliffeassociates.resourcecontainer.entity.language {
+                                   identifier = targetLanguage.slug
+                                   direction = targetLanguage.direction
+                                   title = targetLanguage.name
+                               }
+                               format = "text/usfm"
+                               subject = sourceMetadata.subject
+                               type = "book"
+                               title = sourceMetadata.title
+                           }
+                       }
+                }
+        rc.writeManifest()
+
+        val meta = rc.manifest.dublinCore.mapToMetadata(projectDir, targetLanguage)
+
+        return meta
     }
 
     fun newProject(sourceProject: Collection, targetLanguage: Language): Completable {

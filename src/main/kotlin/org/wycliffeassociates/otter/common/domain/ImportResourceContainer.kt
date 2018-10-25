@@ -1,24 +1,30 @@
 package org.wycliffeassociates.otter.common.domain
 
 import io.reactivex.*
+import org.wycliffeassociates.otter.common.collections.tree.Node
+import org.wycliffeassociates.otter.common.collections.tree.Tree
+import org.wycliffeassociates.otter.common.collections.tree.TreeNode
 import org.wycliffeassociates.otter.common.data.model.Chunk
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Language
 import org.wycliffeassociates.otter.common.data.model.ResourceMetadata
+import org.wycliffeassociates.otter.common.domain.mapper.mapToMetadata
 import org.wycliffeassociates.otter.common.domain.usfm.ParseUsfm
 import org.wycliffeassociates.otter.common.persistence.repositories.*
 
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
 import org.wycliffeassociates.resourcecontainer.entity.DublinCore
+import org.wycliffeassociates.resourcecontainer.entity.Manifest
 import org.wycliffeassociates.resourcecontainer.entity.Project
+import org.wycliffeassociates.resourcecontainer.entity.project
 import org.wycliffeassociates.resourcecontainer.errors.RCException
 
 import java.io.File
 import java.io.FileFilter
 import java.io.IOException
-import java.time.LocalDate
-import java.time.ZonedDateTime
+import javax.swing.text.AbstractDocument
+
 
 class ImportResourceContainer(
         private val languageRepository: ILanguageRepository,
@@ -80,22 +86,59 @@ class ImportResourceContainer(
             expandResourceContainerBundle(rc)
         }
 
-        return languageRepository.getBySlug(dc.language.identifier).map {
-            dc.mapToMetadata(container, it)
-        }.flatMap {
-            val resourceMetadata = it
-            //metadata id is going to be needed for the collection insert
-            return@flatMap metadataRepository.insert(resourceMetadata).map {
-                resourceMetadata.id = it
-                return@map resourceMetadata
-            }
-        }.flatMapCompletable {
-            val resourceMetadata = it
-            importBible(resourceMetadata)
-            return@flatMapCompletable Observable.fromIterable(rc.manifest.projects).flatMapCompletable {
-                importProject(it, resourceMetadata).doOnError { println(it) }
-            }
+        val tree = constructContainerTree(rc)
+        return collectionRepository.importResourceContainer(tree, dc.language.identifier)
+    }
+
+    private fun constructContainerTree(rc: ResourceContainer): Tree {
+        val root = constructRoot(rc)
+        val categories = getCategories(rc)
+        root.addAll(categories.map { Tree(it) })
+        for (category in root.children) {
+            val projects = getProjectsInCategory(rc.manifest, (category.value as Collection).slug)
+            val projectTrees = constructContentTrees(projects, rc)
+            (category as Tree).addAll(projectTrees)
         }
+        val projects = getProjectsWithoutCategory(rc.manifest)
+        val projectTrees = constructContentTrees(projects, rc)
+        root.addAll(projectTrees)
+        return root
+    }
+
+    private fun constructContentTrees(projects: List<Project>, rc: ResourceContainer): List<Tree> {
+        val projectTrees = projects.map { Tree(it.mapToCollection(rc.type())) }
+        for ((idx, project) in projects.withIndex()) {
+            val content = getChunksInProject(project)
+            projectTrees[idx].addAll(content.map { TreeNode(it) })
+        }
+        return projectTrees
+    }
+
+    private fun constructRoot(rc: ResourceContainer): Tree {
+        val dc = rc.manifest.dublinCore
+        val slug = dc.identifier
+        val title = dc.title
+        val label = dc.type
+        val collection = Collection(0, slug, label, title, null)
+        return Tree(collection)
+    }
+
+    private fun getChunksInProject(project: Project): List<Chunk> {
+        TODO()
+    }
+
+    private fun getCategories(rc: ResourceContainer): List<Collection> {
+        TODO()
+    }
+
+    private fun getProjectsInCategory(manifest: Manifest, categorySlug: String): List<Project> {
+        val projects = manifest.projects.filter { it.categories.contains(categorySlug) }
+        return projects
+    }
+
+    private fun getProjectsWithoutCategory(manifest: Manifest): List<Project> {
+        val projects = manifest.projects.filter { it.categories.isEmpty() }
+        return projects
     }
 
     fun expandResourceContainerBundle(rc: ResourceContainer) {
@@ -206,53 +249,12 @@ class ImportResourceContainer(
     }
 }
 
-private fun Project.mapToCollection(type: String, metadata: ResourceMetadata): Collection {
+private fun Project.mapToCollection(type: String, metadata: ResourceMetadata? = null): Collection {
     return Collection(
             sort,
             identifier,
             type,
             title,
             metadata
-    )
-}
-
-private fun DublinCore.mapToMetadata(dir: File, lang: Language): ResourceMetadata {
-    val (issuedDate, modifiedDate) = listOf(issued, modified)
-            .map {
-                // String could be in any of [W3 ISO8601 profile](https://www.w3.org/TR/NOTE-datetime)
-                // Sanitize to be YYYY-MM-DD
-                it
-                        // Remove any time information
-                        .substringBefore("T")
-                        // Split into YYYY, MM, and DD parts
-                        .split("-")
-                        .toMutableList()
-                        // Add any months or days to complete the YYYY-MM-DD format
-                        .apply {
-                            for (i in 1..(3 - size)) {
-                                add("01")
-                            }
-                        }
-                        // Combine back to a string
-                        .joinToString("-")
-                        // Parse to local date
-                        .let { sanitized -> LocalDate.parse(sanitized) }
-            }
-
-    return ResourceMetadata(
-            conformsTo,
-            creator,
-            description,
-            format,
-            identifier,
-            issuedDate,
-            lang,
-            modifiedDate,
-            publisher,
-            subject,
-            type,
-            title,
-            version,
-            dir
     )
 }
