@@ -2,7 +2,6 @@ package org.wycliffeassociates.otter.common.domain.content
 
 import io.reactivex.Completable
 import io.reactivex.Single
-import io.reactivex.functions.BiFunction
 import io.reactivex.functions.Function3
 import org.wycliffeassociates.otter.common.data.model.Chunk
 import org.wycliffeassociates.otter.common.data.model.Collection
@@ -16,7 +15,7 @@ import org.wycliffeassociates.otter.common.persistence.repositories.ITakeReposit
 import java.io.File
 import java.time.LocalDate
 
-class CreateTake(
+class RecordTake(
         private val collectionRepository: ICollectionRepository,
         private val chunkRepository: IChunkRepository,
         private val takeRepository: ITakeRepository,
@@ -24,7 +23,7 @@ class CreateTake(
         private val waveFileCreator: IWaveFileCreator,
         private val launchPlugin: LaunchPlugin
 ) {
-    private fun getNumberOfChunks(collection: Collection): Single<Int> = chunkRepository
+    private fun getChunkCount(collection: Collection): Single<Int> = chunkRepository
             .getByCollection(collection)
             .map { it.size }
 
@@ -32,13 +31,13 @@ class CreateTake(
             .getChildren(collection)
             .map { it.size }
 
-    private fun getHighestTakeNumber(chunk: Chunk): Single<Int> = takeRepository
+    private fun getMaxTakeNumber(chunk: Chunk): Single<Int> = takeRepository
             .getByChunk(chunk)
             .map { takes ->
                 takes.maxBy { it.number }?.number ?: 0
             }
 
-    private fun generateTakeFilename(
+    private fun generateFilename(
             project: Collection,
             chapter: Collection,
             chunk: Chunk,
@@ -79,13 +78,13 @@ class CreateTake(
         ).joinToString("_", postfix = ".wav")
     }
 
-    fun create(chunk: Chunk, project: Collection, chapter: Collection): Single<Take> = Single
+    private fun create(project: Collection, chapter: Collection, chunk: Chunk): Single<Take> = Single
             .zip(
-                    getHighestTakeNumber(chunk),
+                    getMaxTakeNumber(chunk),
                     getNumberOfSubcollections(project),
-                    getNumberOfChunks(chapter),
+                    getChunkCount(chapter),
                     Function3 { highest, chapterCount, verseCount ->
-                        val filename = generateTakeFilename(
+                        val filename = generateFilename(
                                 project,
                                 chapter,
                                 chunk,
@@ -116,12 +115,12 @@ class CreateTake(
                     }
             )
 
-    fun saveNew(take: Take, chunk: Chunk): Completable = takeRepository
+    private fun saveNew(take: Take, chunk: Chunk): Completable = takeRepository
             .insertForChunk(take, chunk)
             .toCompletable()
 
-    fun recordAndSaveNewTake(chunk: Chunk, project: Collection, chapter: Collection): Completable {
-        return create(chunk, project, chapter)
+    fun recordForChunk(project: Collection, chapter: Collection, chunk: Chunk): Completable {
+        return create(project, chapter, chunk)
                 .flatMap { take ->
                     launchPlugin
                             .launchDefaultPlugin(take.path)

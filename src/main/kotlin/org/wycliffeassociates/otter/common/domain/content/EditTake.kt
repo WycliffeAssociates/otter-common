@@ -10,7 +10,7 @@ class EditTake(
         private val takeRepository: ITakeRepository,
         private val launchPlugin: LaunchPlugin
 ) {
-    fun editAndSave(take: Take): Completable {
+    fun edit(take: Take): Completable {
         take.timestamp = LocalDate.now()
         return launchPlugin
                 .launchDefaultPlugin(take.path)
