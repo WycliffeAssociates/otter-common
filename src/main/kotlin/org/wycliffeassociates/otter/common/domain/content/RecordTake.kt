@@ -115,11 +115,11 @@ class RecordTake(
                     }
             )
 
-    private fun saveNew(take: Take, chunk: Chunk): Completable = takeRepository
+    private fun insert(take: Take, chunk: Chunk): Completable = takeRepository
             .insertForChunk(take, chunk)
             .toCompletable()
 
-    fun recordForChunk(project: Collection, chapter: Collection, chunk: Chunk): Completable {
+    fun record(project: Collection, chapter: Collection, chunk: Chunk): Completable {
         return create(project, chapter, chunk)
                 .flatMap { take ->
                     launchPlugin
@@ -127,7 +127,7 @@ class RecordTake(
                             .toSingle { take }
                 }
                 .flatMapCompletable { take ->
-                    saveNew(take, chunk)
+                    insert(take, chunk)
                 }
     }
 }
