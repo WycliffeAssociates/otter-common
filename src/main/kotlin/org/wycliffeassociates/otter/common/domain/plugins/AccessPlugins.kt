@@ -28,4 +28,8 @@ class AccessPlugins(
     fun setRecorderData(default: AudioPluginData): Completable {
         return pluginRepository.setRecorderData(default)
     }
+
+    fun delete(plugin: AudioPluginData): Completable {
+        return pluginRepository.delete(plugin)
+    }
 }
