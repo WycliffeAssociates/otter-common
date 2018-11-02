@@ -32,7 +32,7 @@ class CreateProject(
     fun getAll(): Single<List<Collection>> {
         return collectionRepo.getAll()
     }
-    
+
     fun newProject(sourceProject: Collection, targetLanguage: Language): Completable {
         // Some concat maps can be removed when dao synchronization is added
         if (sourceProject.resourceContainer == null) throw NullPointerException("Source project has no metadata")

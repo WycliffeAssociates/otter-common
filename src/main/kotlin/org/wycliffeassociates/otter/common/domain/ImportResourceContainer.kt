@@ -28,6 +28,8 @@ class ImportResourceContainer(
         directoryProvider: IDirectoryProvider
 ) {
 
+    private val rcDirectory = File(directoryProvider.getAppDataDirectory(), "rc")
+
     //TODO: Remove this when Bible, OT, NT are included as part of a resource container
     fun importBible(meta: ResourceMetadata) {
         //Initialize bible and testament collections
@@ -43,8 +45,6 @@ class ImportResourceContainer(
         collectionRepository.updateParent(ot, bible).subscribe()
         collectionRepository.updateParent(nt, bible).subscribe()
     }
-
-    private val rcDirectory = File(directoryProvider.getAppDataDirectory(), "rc")
 
     fun import(file: File): Completable {
         return when {
@@ -89,24 +89,44 @@ class ImportResourceContainer(
         val categories = getCategories(rc)
         root.addAll(categories.map { Tree(it) })
         for (category in root.children) {
+            val projectTrees = arrayListOf<Tree>()
             val projects = getProjectsInCategory(rc.manifest, (category.value as Collection).slug)
-            val projectTrees = constructContentTrees(projects, rc)
+            for (project in projects) {
+                projectTrees.add(constructProjectTree(rc.dir, project, rc.type()))
+            }
             (category as Tree).addAll(projectTrees)
         }
         val projects = getProjectsWithoutCategory(rc.manifest)
-        val projectTrees = constructContentTrees(projects, rc)
+        var projectTrees = arrayListOf<Tree>()
+        for (project in projects) {
+            projectTrees.add(constructProjectTree(rc.dir, project, rc.type()))
+        }
         root.addAll(projectTrees)
         return root
     }
 
-    private fun constructContentTrees(projects: List<Project>, rc: ResourceContainer): List<Tree> {
-        val projectTrees = projects.map { Tree(it.mapToCollection(rc.type())) }
-        for ((idx, project) in projects.withIndex()) {
-            val content = getChunksInProject(project)
-            projectTrees[idx].addAll(content.map { TreeNode(it) })
+    private fun constructProjectTree(containerDir: File, project: Project, type: String): Tree {
+        val projectDir = File(containerDir, project.path)
+        val files = projectDir.listFiles()
+        val book = Tree(Collection(project.sort, project.identifier, type, project.title, null))
+        val chapters = arrayListOf<Tree>()
+        for (file in files) {
+            val doc = ParseUsfm(file).parse()
+            for (chapter in doc.chapters) {
+                val slug = "${project.identifier}_${chapter.key}"
+                val col = Collection(chapter.key, slug, "chapter", chapter.key.toString(), null)
+                val tree = Tree(col)
+                for(verse in chapter.value.values) {
+                    val con = Chunk(verse.number, "verse", verse.number, verse.number, null)
+                    tree.addChild(TreeNode(con))
+                }
+                chapters.add(tree)
+            }
         }
-        return projectTrees
+        book.addAll(chapters)
+        return book
     }
+
 
     private fun constructRoot(rc: ResourceContainer): Tree {
         val dc = rc.manifest.dublinCore
@@ -117,12 +137,11 @@ class ImportResourceContainer(
         return Tree(collection)
     }
 
-    private fun getChunksInProject(project: Project): List<Chunk> {
-        TODO()
-    }
-
     private fun getCategories(rc: ResourceContainer): List<Collection> {
-        TODO()
+        return arrayListOf(
+                Collection(1, "bible-ot", "bible-ot", "Old Testament", null),
+                Collection(2, "bible-nt", "bible-nt", "New Testament", null)
+        )
     }
 
     private fun getProjectsInCategory(manifest: Manifest, categorySlug: String): List<Project> {
@@ -252,3 +271,4 @@ private fun Project.mapToCollection(type: String, metadata: ResourceMetadata? = 
             metadata
     )
 }
+
