@@ -3,6 +3,7 @@ package org.wycliffeassociates.otter.common.persistence.repositories
 import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Single
+import org.wycliffeassociates.otter.common.collections.tree.Tree
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.ResourceMetadata
 
@@ -12,4 +13,5 @@ interface ICollectionRepository : IRepository<Collection> {
     fun getChildren(collection: Collection): Single<List<Collection>>
     fun updateSource(collection: Collection, newSource: Collection): Completable
     fun updateParent(collection: Collection, newParent: Collection): Completable
+    fun importResourceContainer(tree: Tree, languageSlug: String): Completable
 }
