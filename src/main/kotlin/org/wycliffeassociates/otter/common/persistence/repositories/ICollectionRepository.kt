@@ -7,6 +7,7 @@ import org.wycliffeassociates.otter.common.collections.tree.Tree
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Language
 import org.wycliffeassociates.otter.common.data.model.ResourceMetadata
+import org.wycliffeassociates.resourcecontainer.ResourceContainer
 
 interface ICollectionRepository : IRepository<Collection> {
     fun insert(collection: Collection): Single<Int>
@@ -15,5 +16,5 @@ interface ICollectionRepository : IRepository<Collection> {
     fun updateSource(collection: Collection, newSource: Collection): Completable
     fun updateParent(collection: Collection, newParent: Collection): Completable
     fun deriveProject(source: Collection, language: Language): Completable
-    fun importResourceContainer(tree: Tree, languageSlug: String): Completable
+    fun importResourceContainer(rc: ResourceContainer, tree: Tree, languageSlug: String): Completable
 }

@@ -81,7 +81,7 @@ class ImportResourceContainer(
         }
 
         val tree = constructContainerTree(rc)
-        return collectionRepository.importResourceContainer(tree, dc.language.identifier)
+        return collectionRepository.importResourceContainer(rc, tree, dc.language.identifier)
     }
 
     private fun constructContainerTree(rc: ResourceContainer): Tree {
