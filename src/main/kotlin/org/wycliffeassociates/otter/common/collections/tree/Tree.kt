@@ -1,21 +1,22 @@
 package org.wycliffeassociates.otter.common.collections.tree
 
 class Tree(value: Any) : TreeNode(value) {
-    val children = arrayListOf<TreeNode>()
+
+    //private mutable list, public immutable accessor
+    private val _children = arrayListOf<TreeNode>()
+    val children: List<TreeNode> = _children
 
     fun addChild(node: TreeNode) {
-        children.add(node)
+        _children.add(node)
     }
 
     fun addAll(nodes: Array<TreeNode>) {
-        children.addAll(nodes)
+        _children.addAll(nodes)
     }
 
     fun addAll(nodes: Collection<TreeNode>) {
-        children.addAll(nodes)
+        _children.addAll(nodes)
     }
 }
 
-open class TreeNode(value: Any) {
-    val value = value
-}
+open class TreeNode(val value: Any)
