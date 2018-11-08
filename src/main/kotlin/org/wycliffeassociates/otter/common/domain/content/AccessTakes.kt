@@ -1,4 +1,4 @@
-package org.wycliffeassociates.otter.common.domain
+package org.wycliffeassociates.otter.common.domain.content
 
 import io.reactivex.Completable
 import io.reactivex.Single
