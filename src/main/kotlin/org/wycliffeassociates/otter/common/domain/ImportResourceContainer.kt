@@ -81,8 +81,8 @@ class ImportResourceContainer(
             if (dc.type == "bundle" && dc.format == "text/usfm") {
                 expandResourceContainerBundle(rc)
             }
-            return@fromCallable constructContainerTree(rc)
-        }.flatMapCompletable { tree ->
+            return@fromCallable Triple(constructContainerTree(rc), rc, dc)
+        }.flatMapCompletable { (tree, rc, dc) ->
             collectionRepository.importResourceContainer(rc, tree, dc.language.identifier)
         }.subscribeOn(Schedulers.io())
     }
