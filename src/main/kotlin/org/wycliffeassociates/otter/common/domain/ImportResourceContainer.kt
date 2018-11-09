@@ -1,6 +1,8 @@
 package org.wycliffeassociates.otter.common.domain
 
 import io.reactivex.Completable
+import io.reactivex.Single
+import io.reactivex.schedulers.Schedulers
 import org.wycliffeassociates.otter.common.collections.tree.Tree
 import org.wycliffeassociates.otter.common.collections.tree.TreeNode
 import org.wycliffeassociates.otter.common.data.model.Chunk
@@ -76,12 +78,14 @@ class ImportResourceContainer(
         val rc = ResourceContainer.load(container)
         val dc = rc.manifest.dublinCore
 
-        if (dc.type == "bundle" && dc.format == "text/usfm") {
-            expandResourceContainerBundle(rc)
-        }
-
-        val tree = constructContainerTree(rc)
-        return collectionRepository.importResourceContainer(rc, tree, dc.language.identifier)
+        return Single.fromCallable {
+            if (dc.type == "bundle" && dc.format == "text/usfm") {
+                expandResourceContainerBundle(rc)
+            }
+            return@fromCallable constructContainerTree(rc)
+        }.flatMapCompletable { tree ->
+            collectionRepository.importResourceContainer(rc, tree, dc.language.identifier)
+        }.subscribeOn(Schedulers.io())
     }
 
     private fun constructContainerTree(rc: ResourceContainer): Tree {
