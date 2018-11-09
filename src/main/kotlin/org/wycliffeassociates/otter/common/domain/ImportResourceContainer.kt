@@ -75,10 +75,9 @@ class ImportResourceContainer(
     }
 
     private fun importResourceContainer(container: File): Completable {
-        val rc = ResourceContainer.load(container)
-        val dc = rc.manifest.dublinCore
-
         return Single.fromCallable {
+            val rc = ResourceContainer.load(container)
+            val dc = rc.manifest.dublinCore
             if (dc.type == "bundle" && dc.format == "text/usfm") {
                 expandResourceContainerBundle(rc)
             }
