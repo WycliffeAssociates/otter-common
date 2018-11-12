@@ -34,7 +34,7 @@ class RecordTakesTest {
             "book-title",
             resourceMetadata
     )
-    private val chapter = Collection(0, "chap-slug", "chap-label", "2", resourceMetadata)
+    private val chapter = Collection(0, "chap-slug", "chap-label", "", resourceMetadata)
     private val chunk = Chunk(0, "chk-label", 0, 0, mock())
 
     private val mockCollectionRepository: ICollectionRepository = mock()
@@ -68,6 +68,7 @@ class RecordTakesTest {
     @Test
     fun shouldCreateTakeFileAndLaunchRecorder() {
         project.sort = 1
+        chapter.titleKey = "2"
         chapter.sort = 2
         chunk.start = 3
         chunk.end = 3
@@ -88,6 +89,27 @@ class RecordTakesTest {
     fun shouldHandleMultiVerseChunk() {
         project.sort = 1
         chapter.sort = 2
+        chapter.titleKey = "2"
+        chunk.start = 3
+        chunk.end = 5
+        maxTakeNumber = 0
+        chapterCount = 10
+        verseCount = 10
+        val expectedPath = "./lang-slug_rc-identifier_b01_book-slug_c02_v03-05_t01.wav"
+
+        setupRepositoryMocks()
+
+        recordTake.record(project, chapter, chunk).test()
+
+        verifyFilepath(expectedPath)
+        verifyRepositoriesAndLaunch()
+    }
+
+    @Test
+    fun shouldHandleNonNumberChapterTitle() {
+        project.sort = 1
+        chapter.sort = 2
+        chapter.titleKey = "chapter-title"
         chunk.start = 3
         chunk.end = 5
         maxTakeNumber = 0
@@ -107,7 +129,7 @@ class RecordTakesTest {
     fun shouldAddLeadingZeros() {
         project.sort = 1
         project.resourceContainer = resourceMetadata
-        chapter.sort = 2
+        chapter.titleKey = "2"
         chunk.start = 3
         chunk.end = 3
         maxTakeNumber = 0
@@ -127,7 +149,7 @@ class RecordTakesTest {
     fun shouldHandleNullMetadata() {
         project.sort = 1
         project.resourceContainer = null
-        chapter.sort = 2
+        chapter.titleKey = "2"
         chunk.start = 3
         chunk.end = 3
         maxTakeNumber = 0
@@ -147,7 +169,7 @@ class RecordTakesTest {
     fun shouldIncrementSortIfBibleNewTestament() {
         project.sort = 40
         project.resourceContainer = resourceMetadata
-        chapter.sort = 2
+        chapter.titleKey = "2"
         chunk.start = 3
         chunk.end = 3
         maxTakeNumber = 0
@@ -168,7 +190,7 @@ class RecordTakesTest {
     fun shouldNotIncrementSortIfNotBible() {
         project.sort = 40
         project.resourceContainer = resourceMetadata
-        chapter.sort = 2
+        chapter.titleKey = "2"
         chunk.start = 3
         chunk.end = 3
         maxTakeNumber = 0
