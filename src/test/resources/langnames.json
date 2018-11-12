@@ -1,0 +1,18 @@
+[
+  {
+    "pk" : 1,
+    "lc" : "en",
+    "ln" : "English",
+    "ld" : "ltr",
+    "gw" : true,
+    "ang" : "English"
+  },
+  {
+    "pk" : 2,
+    "lc" : "fr",
+    "ln" : "Français",
+    "ld" : "ltr",
+    "gw" : false,
+    "ang" : "French"
+  }
+]
