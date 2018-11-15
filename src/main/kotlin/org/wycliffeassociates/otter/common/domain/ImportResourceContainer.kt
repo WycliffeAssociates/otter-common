@@ -129,9 +129,9 @@ class ImportResourceContainer(
     private fun getCategories(rc: ResourceContainer): List<Collection> {
         val collections = arrayListOf<Collection>()
         val config = rc.config
-        config.let {
-            if (config is OtterResourceContainerConfig) {
-                config.extendedDublinCore?.let {
+        config?.let {
+            if (it is OtterResourceContainerConfig) {
+                it.extendedDublinCore?.let {
                     for (cat in it.categories) {
                         collections.add(
                                 Collection(cat.sort, cat.identifier, cat.identifier, cat.title, null)
