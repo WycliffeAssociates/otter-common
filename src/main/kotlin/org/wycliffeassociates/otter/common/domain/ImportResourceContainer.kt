@@ -149,11 +149,7 @@ class ImportResourceContainer(
     }
 
     private fun getProjectsNotInCategories(manifest: Manifest, categorySlugs: List<String>): List<Project> {
-        val projects = manifest.projects.filter {
-            categorySlugs.isEmpty() // no categories were added (maybe config is missing)
-                || it.categories.isEmpty() // project doesn't belong to a category
-                || it.categories.map { categorySlugs.contains(it) }.none() // some categories are in config, not all
-        }
+        val projects = manifest.projects.filter { it.categories.intersect(categorySlugs).isEmpty() }
         return projects
     }
 
