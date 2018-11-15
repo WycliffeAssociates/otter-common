@@ -10,7 +10,9 @@ import java.io.File
 import java.io.IOException
 
 class OtterResourceContainerConfig : Config {
-    lateinit var config: OtterConfig
+
+    var config: OtterConfig? = null
+    var extendedDublinCore: ExtendedDublinCore? = null
 
     override fun read(configFile: File): Config {
         if (configFile.exists()) {
@@ -18,6 +20,9 @@ class OtterResourceContainerConfig : Config {
             mapper.registerModule(KotlinModule())
             config = configFile.bufferedReader().use {
                 mapper.readValue(it, OtterConfig::class.java)
+            }
+            config?.let {
+                extendedDublinCore = it.extendedDublinCore
             }
             return this
         } else {
@@ -43,10 +48,10 @@ class OtterConfig (
 
 
 class ExtendedDublinCore (
-    var categories: List<Categories>
+    var categories: List<Category>
 )
 
-data class Categories(
+data class Category(
         val identifier: String,
         val title: String,
         val type: String,
