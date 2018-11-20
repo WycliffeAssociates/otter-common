@@ -10,6 +10,7 @@ import io.reactivex.Single
 import org.junit.Test
 import org.wycliffeassociates.otter.common.data.audioplugin.AudioPluginData
 import org.wycliffeassociates.otter.common.persistence.repositories.IAudioPluginRepository
+import java.io.File
 
 class AccessPluginsTest {
     private val mockPluginData: AudioPluginData = mock()
@@ -62,8 +63,39 @@ class AccessPluginsTest {
     }
 
     @Test
-    fun shouldDeleteData() {
+    fun sholudDeleteDataWithNullFile() {
         accessPlugins.delete(mockPluginData).test()
+        verify(mockPluginRepository).delete(mockPluginData)
+        verifyNoMoreInteractions(mockPluginRepository)
+    }
+
+    @Test
+    fun shouldDeleteDataAndFileIfExists() {
+        val mockFile: File = mock {
+            on { delete() } doReturn true
+            on { exists() } doReturn true
+        }
+        doReturn(mockFile).`when`(mockPluginData).pluginFile
+
+        accessPlugins.delete(mockPluginData).test()
+        verify(mockFile).exists()
+        verify(mockFile).delete()
+        verifyNoMoreInteractions(mockFile)
+        verify(mockPluginRepository).delete(mockPluginData)
+        verifyNoMoreInteractions(mockPluginRepository)
+    }
+
+    @Test
+    fun shouldNotFileIfDoesNotExist() {
+        val mockFile: File = mock {
+            on { delete() } doReturn true
+            on { exists() } doReturn false
+        }
+        doReturn(mockFile).`when`(mockPluginData).pluginFile
+
+        accessPlugins.delete(mockPluginData).test()
+        verify(mockFile).exists()
+        verifyNoMoreInteractions(mockFile)
         verify(mockPluginRepository).delete(mockPluginData)
         verifyNoMoreInteractions(mockPluginRepository)
     }

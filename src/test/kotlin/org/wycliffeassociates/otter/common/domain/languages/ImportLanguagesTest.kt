@@ -1,4 +1,4 @@
-package org.wycliffeassociates.otter.common.domain
+package org.wycliffeassociates.otter.common.domain.languages
 
 import com.nhaarman.mockitokotlin2.*
 import io.reactivex.Single
@@ -6,10 +6,9 @@ import org.junit.Assert
 import org.junit.Test
 import org.wycliffeassociates.otter.common.data.model.Language
 import org.wycliffeassociates.otter.common.persistence.repositories.ILanguageRepository
-import java.io.File
 
 class ImportLanguagesTest {
-    private val sourceFile = File(ClassLoader.getSystemResource("langnames.json").toURI())
+    private val sourceFileStream = ClassLoader.getSystemResourceAsStream("langnames.json")
     private val mockLanguageRepository: ILanguageRepository = mock {
         on { insertAll(any()) } doReturn Single.just(listOf())
     }
@@ -20,7 +19,7 @@ class ImportLanguagesTest {
     )
 
     // unit under test
-    private val importLanguages = ImportLanguages(sourceFile, mockLanguageRepository)
+    private val importLanguages = ImportLanguages(sourceFileStream, mockLanguageRepository)
 
     @Test
     fun shouldImportAllLanguages() {

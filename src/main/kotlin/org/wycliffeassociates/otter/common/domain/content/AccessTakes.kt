@@ -39,6 +39,6 @@ class AccessTakes(
     fun getTakeCount(chunk: Chunk): Single<Int> {
         return takeRepo
                 .getByChunk(chunk)
-                .map { it.size }
+                    .map { it.size }
     }
 }

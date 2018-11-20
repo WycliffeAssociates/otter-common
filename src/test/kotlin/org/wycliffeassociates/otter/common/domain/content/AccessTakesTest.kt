@@ -1,9 +1,6 @@
 package org.wycliffeassociates.otter.common.domain.content
 
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
+import com.nhaarman.mockitokotlin2.*
 import io.reactivex.Completable
 import io.reactivex.Single
 import org.junit.Assert
@@ -20,7 +17,7 @@ class AccessTakesTest {
     private val chunk = Chunk(0, "", 0, 0, null)
 
     private val mockTakeRepository: ITakeRepository = mock {
-        on { getByChunk(mockChunk) } doReturn Single.just(listOf())
+        on { getByChunk(mockChunk) } doReturn Single.just(listOf(mock(), mock()))
         on { update(take) } doReturn Completable.complete()
         on { delete(mockTake) } doReturn Completable.complete()
     }
@@ -36,6 +33,7 @@ class AccessTakesTest {
         accessTakes.getByChunk(mockChunk).test()
         verify(mockTakeRepository).getByChunk(mockChunk)
         verifyNoMoreInteractions(mockTakeRepository)
+        verifyZeroInteractions(mockChunkRepository)
     }
 
     @Test
@@ -61,6 +59,7 @@ class AccessTakesTest {
         accessTakes.setTakePlayed(take, true).test()
         verify(mockTakeRepository).update(take)
         verifyNoMoreInteractions(mockTakeRepository)
+        verifyZeroInteractions(mockChunkRepository)
         Assert.assertEquals(true, take.played)
     }
 
@@ -70,7 +69,9 @@ class AccessTakesTest {
         accessTakes.setTakePlayed(take, false).test()
         verify(mockTakeRepository).update(take)
         verifyNoMoreInteractions(mockTakeRepository)
+        verifyZeroInteractions(mockChunkRepository)
         Assert.assertEquals(false, take.played)
+
     }
 
     @Test
@@ -78,5 +79,15 @@ class AccessTakesTest {
         accessTakes.delete(mockTake).test()
         verify(mockTakeRepository).delete(mockTake)
         verifyNoMoreInteractions(mockTakeRepository)
+        verifyZeroInteractions(mockChunkRepository)
+    }
+
+    @Test
+    fun shouldGetTakeCount() {
+        val testSubscriber = accessTakes.getTakeCount(mockChunk).test()
+        testSubscriber.assertValue(2)
+        verify(mockTakeRepository).getByChunk(mockChunk)
+        verifyNoMoreInteractions(mockTakeRepository)
+        verifyZeroInteractions(mockChunkRepository)
     }
 }
