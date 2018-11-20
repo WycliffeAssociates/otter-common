@@ -11,4 +11,7 @@ class GetCollections(private val collectionRepo: ICollectionRepository) {
     fun rootProjects(): Single<List<Collection>> {
         return collectionRepo.getRootProjects()
     }
+    fun subcollectionsOf(collection: Collection): Single<List<Collection>> {
+        return collectionRepo.getChildren(collection)
+    }
 }
