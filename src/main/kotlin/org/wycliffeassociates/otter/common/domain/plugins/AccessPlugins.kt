@@ -30,6 +30,8 @@ class AccessPlugins(
     }
 
     fun delete(plugin: AudioPluginData): Completable {
-        return pluginRepository.delete(plugin)
+        return Completable.fromAction {
+            plugin.pluginFile?.let { if (it.exists()) it.delete() }
+        }.andThen(pluginRepository.delete(plugin))
     }
 }
