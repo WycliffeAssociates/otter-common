@@ -105,6 +105,11 @@ class ImportResourceContainer(
                 val slug = "${project.identifier}_${chapter.key}"
                 val col = Collection(chapter.key, slug, "chapter", chapter.key.toString(), null)
                 val tree = Tree(col)
+                // create a chunk for the whole chapter
+                val chapChunk = Chunk(0, "chapter",
+                        chapter.value.values.first().number,
+                        chapter.value.values.last().number, null)
+                tree.addChild(TreeNode(chapChunk))
                 for (verse in chapter.value.values) {
                     val con = Chunk(verse.number, "verse", verse.number, verse.number, null)
                     tree.addChild(TreeNode(con))

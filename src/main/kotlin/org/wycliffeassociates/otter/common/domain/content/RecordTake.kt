@@ -23,9 +23,9 @@ class RecordTake(
         private val waveFileCreator: IWaveFileCreator,
         private val launchPlugin: LaunchPlugin
 ) {
-    private fun getChunkCount(collection: Collection): Single<Int> = chunkRepository
+    private fun getVerseCount(collection: Collection): Single<Int> = chunkRepository
             .getByCollection(collection)
-            .map { it.size }
+            .map { it.filter { it.labelKey != "chapter" }.size }
 
     private fun getNumberOfSubcollections(collection: Collection): Single<Int> = collectionRepository
             .getChildren(collection)
@@ -67,22 +67,34 @@ class RecordTake(
         val takeNumber = "%02d".format(number)
 
         // Compile the complete filename
-        return listOf(
-                languageSlug,
-                rcSlug,
-                "b$bookNumber",
-                bookSlug,
-                "c$chapterNumber",
-                "v$verseNumber",
-                "t$takeNumber"
-        ).joinToString("_", postfix = ".wav")
+
+        return if (chunk.labelKey == "chapter") {
+            listOf(
+                    languageSlug,
+                    rcSlug,
+                    "b$bookNumber",
+                    bookSlug,
+                    "c$chapterNumber",
+                    "t$takeNumber"
+            ).joinToString("_", postfix = ".wav")
+        } else {
+            listOf(
+                    languageSlug,
+                    rcSlug,
+                    "b$bookNumber",
+                    bookSlug,
+                    "c$chapterNumber",
+                    "v$verseNumber",
+                    "t$takeNumber"
+            ).joinToString("_", postfix = ".wav")
+        }
     }
 
     private fun create(project: Collection, chapter: Collection, chunk: Chunk): Single<Take> = Single
             .zip(
                     getMaxTakeNumber(chunk),
                     getNumberOfSubcollections(project),
-                    getChunkCount(chapter),
+                    getVerseCount(chapter),
                     Function3 { highest, chapterCount, verseCount ->
                         val filename = generateFilename(
                                 project,
