@@ -58,7 +58,7 @@ class RecordTake(
                         && project.sort > 39) project.sort + 1 else project.sort
         )
         val bookSlug = project.slug
-        val chapterNumber = chapterFormat.format(chapter.titleKey.toInt())
+        val chapterNumber = chapterFormat.format(chapter.titleKey.toIntOrNull() ?: chapter.sort)
         val verseNumber = if (chunk.start == chunk.end) {
             verseFormat.format(chunk.start)
         } else {
@@ -97,7 +97,8 @@ class RecordTake(
                         val chapterFormat = if (chapterCount > 99) "%03d" else "%02d"
 
                         val takeFile = directoryProvider
-                                .getProjectAudioDirectory(project, chapterFormat.format(chapter.titleKey.toInt()))
+                                .getProjectAudioDirectory(project, chapterFormat
+                                        .format(chapter.titleKey.toIntOrNull() ?: project.sort))
                                 .resolve(File(filename))
 
                         val newTake = Take(
