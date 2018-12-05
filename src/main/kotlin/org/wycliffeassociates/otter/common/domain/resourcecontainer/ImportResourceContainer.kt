@@ -58,7 +58,7 @@ class ImportResourceContainer(
         return Single.fromCallable {
             val rc = ResourceContainer.load(container, OtterResourceContainerConfig())
             val dc = rc.manifest.dublinCore
-            if (dc.type == "bundle" && dc.format == "text/usfm") {
+            if (dc.type == "bundle" && dc.format.startsWith("text/usfm")) {
                 expandResourceContainerBundle(rc)
             }
             return@fromCallable Triple(constructContainerTree(rc), rc, dc)
