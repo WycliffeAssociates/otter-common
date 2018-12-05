@@ -136,6 +136,9 @@ class RecordTake(
                 .flatMap { take ->
                     launchPlugin
                             .launchRecorder(take.path)
+                            .doOnError {
+                                take.path.delete()
+                            }
                             .toSingle { take }
                 }
                 .flatMapCompletable { take ->
