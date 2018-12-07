@@ -7,6 +7,7 @@ import org.wycliffeassociates.otter.common.data.model.Content
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Take
 import org.wycliffeassociates.otter.common.domain.plugins.LaunchPlugin
+import org.wycliffeassociates.otter.common.persistence.EMPTY_WAVE_FILE_SIZE
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
 import org.wycliffeassociates.otter.common.persistence.IWaveFileCreator
 import org.wycliffeassociates.otter.common.persistence.repositories.IContentRepository
@@ -131,15 +132,25 @@ class RecordTake(
             .insertForContent(take, content)
             .toCompletable()
 
-    fun record(project: Collection, chapter: Collection, content: Content): Completable {
+    fun record(project: Collection, chapter: Collection, content: Content): Single<Boolean> {
         return create(project, chapter, content)
                 .flatMap { take ->
                     launchPlugin
                             .launchRecorder(take.path)
                             .toSingle { take }
                 }
-                .flatMapCompletable { take ->
-                    insert(take, content)
+                .flatMap { take ->
+                    // check if the take has any content
+                    // return true if audio was recorded
+                    // return false if the file was empty
+                    return@flatMap if (take.path.readBytes().size == EMPTY_WAVE_FILE_SIZE) {
+                        Single.fromCallable {
+                            take.path.delete()
+                            false
+                        }
+                    } else {
+                        insert(take, content).toSingle { true }
+                    }
                 }
     }
 }
