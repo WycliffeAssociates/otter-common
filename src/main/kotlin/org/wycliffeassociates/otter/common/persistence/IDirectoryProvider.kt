@@ -2,6 +2,7 @@ package org.wycliffeassociates.otter.common.persistence
 
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.ResourceMetadata
+import org.wycliffeassociates.resourcecontainer.ResourceContainer
 import java.io.File
 
 interface IDirectoryProvider {
@@ -14,6 +15,9 @@ interface IDirectoryProvider {
 
     // Create the directory for project audio
     fun getProjectAudioDirectory(sourceMetadata: ResourceMetadata, book: Collection, chapterDirName: String): File
+
+    fun getSourceContainerDirectory(container: ResourceContainer): File
+    fun getDerivedContainerDirectory(metadata: ResourceMetadata, source: ResourceMetadata): File
 
     val resourceContainerDirectory: File
     val userProfileImageDirectory: File
