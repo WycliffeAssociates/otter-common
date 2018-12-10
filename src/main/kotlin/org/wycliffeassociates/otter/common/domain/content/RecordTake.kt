@@ -24,6 +24,12 @@ class RecordTake(
         private val waveFileCreator: IWaveFileCreator,
         private val launchPlugin: LaunchPlugin
 ) {
+    enum class Result {
+        SUCCESS,
+        NO_RECORDER,
+        NO_AUDIO
+    }
+
     private fun getContentCount(collection: Collection, filter: (Content) -> Boolean): Single<Int> = contentRepository
             .getByCollection(collection)
             .map { retrieved -> retrieved.filter(filter).size }
@@ -132,25 +138,25 @@ class RecordTake(
             .insertForContent(take, content)
             .toCompletable()
 
-    fun record(project: Collection, chapter: Collection, content: Content): Single<Boolean> {
+    fun record(project: Collection, chapter: Collection, content: Content): Single<Result> {
         return create(project, chapter, content)
                 .flatMap { take ->
                     launchPlugin
                             .launchRecorder(take.path)
-                            .toSingle { take }
-                }
-                .flatMap { take ->
-                    // check if the take has any content
-                    // return true if audio was recorded
-                    // return false if the file was empty
-                    return@flatMap if (take.path.readBytes().size == EMPTY_WAVE_FILE_SIZE) {
-                        Single.fromCallable {
-                            take.path.delete()
-                            false
-                        }
-                    } else {
-                        insert(take, content).toSingle { true }
-                    }
+                            .flatMap {
+                                when (it) {
+                                    LaunchPlugin.Result.SUCCESS -> {
+                                        if (take.path.readBytes().size == EMPTY_WAVE_FILE_SIZE) {
+                                            take.path.delete()
+                                            Single.just(Result.NO_AUDIO)
+                                        } else {
+                                            insert(take, content).toSingle { Result.SUCCESS }
+
+                                        }
+                                    }
+                                    LaunchPlugin.Result.NO_PLUGIN -> Single.just(Result.NO_RECORDER)
+                                }
+                            }
                 }
     }
 }
