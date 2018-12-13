@@ -146,7 +146,7 @@ class RecordTake(
                             .flatMap {
                                 when (it) {
                                     LaunchPlugin.Result.SUCCESS -> {
-                                        if (take.path.readBytes().size == EMPTY_WAVE_FILE_SIZE) {
+                                        if (take.path.length() == EMPTY_WAVE_FILE_SIZE) {
                                             take.path.delete()
                                             Single.just(Result.NO_AUDIO)
                                         } else {
