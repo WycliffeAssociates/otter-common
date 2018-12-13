@@ -3,7 +3,10 @@ package org.wycliffeassociates.otter.common.domain.resourcecontainer
 import io.reactivex.Single
 import io.reactivex.schedulers.Schedulers
 import org.wycliffeassociates.otter.common.collections.tree.Tree
+import org.wycliffeassociates.otter.common.collections.tree.TreeNode
 import org.wycliffeassociates.otter.common.data.model.Collection
+import org.wycliffeassociates.otter.common.data.model.Content
+import org.wycliffeassociates.otter.common.domain.usfm.ParseUsfm
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
 import org.wycliffeassociates.otter.common.persistence.repositories.ICollectionRepository
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
@@ -113,10 +116,11 @@ class ImportResourceContainer(
                 }
             }
             val projectResult = constructProjectTree(container.dir, project)
-            if (projectResult.first == Result.SUCCESS)
+            if (projectResult.first == Result.SUCCESS) {
                 parent.addChild(projectResult.second)
-            else
+            } else {
                 return Pair(projectResult.first, Tree(Unit))
+            }
         }
         return Pair(Result.SUCCESS, root)
     }
@@ -143,7 +147,7 @@ class ImportResourceContainer(
         return when (file.extension) {
             "usfm", "USFM" -> {
                 try {
-                    val chapters = file.parseUSFMToChapterTrees(projectIdentifier)
+                    val chapters = parseUSFMToChapterTrees(file, projectIdentifier)
                     root.addAll(chapters)
                     Result.SUCCESS
                 } catch (e: RuntimeException) {
@@ -151,6 +155,41 @@ class ImportResourceContainer(
                 }
             }
             else -> { Result.UNSUPPORTED_CONTENT }
+        }
+    }
+
+    private fun parseUSFMToChapterTrees(usfmFile: File, projectSlug: String): List<Tree> {
+        if (usfmFile.extension != "usfm") {
+            throw IOException("Not a USFM file")
+        }
+
+        val doc = ParseUsfm(usfmFile).parse()
+        return doc.chapters.map { chapter ->
+            val chapterSlug = "${projectSlug}_${chapter.key}"
+            val chapterCollection = Collection(
+                    chapter.key,
+                    chapterSlug,
+                    "chapter",
+                    chapter.key.toString(),
+                    null
+            )
+            val chapterTree = Tree(chapterCollection)
+            // create a chunk for the whole chapter
+            val chapChunk = Content(
+                    0,
+                    "chapter",
+                    chapter.value.values.first().number,
+                    chapter.value.values.last().number,
+                    null
+            )
+            chapterTree.addChild(TreeNode(chapChunk))
+
+            // Create content for each verse
+            for (verse in chapter.value.values) {
+                val content = Content(verse.number, "verse", verse.number, verse.number, null)
+                chapterTree.addChild(TreeNode(content))
+            }
+            return@map chapterTree
         }
     }
 }
