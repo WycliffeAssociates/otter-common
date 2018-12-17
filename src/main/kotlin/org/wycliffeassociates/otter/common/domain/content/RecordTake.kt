@@ -154,8 +154,8 @@ class RecordTake(
                                         }
                                     }
                                     LaunchPlugin.Result.NO_PLUGIN -> {
-                                        Single.just(Result.NO_RECORDER)
                                         take.path.delete()
+                                        Single.just(Result.NO_RECORDER)
                                     }
                                 }
                             }
