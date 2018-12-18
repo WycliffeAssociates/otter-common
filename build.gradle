@@ -37,6 +37,7 @@ dependencies {
 
     //resource container
     implementation 'org.wycliffeassociates:kotlin-resource-container'
+    implementation 'org.wycliffeassociates:makrdownparser'
 
     //Jackson YAML
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.9.2"

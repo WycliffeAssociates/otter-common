@@ -1,0 +1,128 @@
+package org.wycliffeassociates.otter.common.domain.mapper
+
+import org.wycliffeassociates.otter.common.collections.tree.Tree
+import org.wycliffeassociates.otter.common.collections.tree.TreeNode
+import org.wycliffeassociates.otter.common.data.model.Collection
+import org.wycliffeassociates.otter.common.data.model.Content
+import org.wycliffeassociates.otter.common.domain.resourcecontainer.OtterResourceContainerConfig
+import org.wycliffeassociates.otter.common.domain.usfm.ParseUsfm
+import org.wycliffeassociates.otter.data.model.Book
+import org.wycliffeassociates.resourcecontainer.ResourceContainer
+import org.wycliffeassociates.resourcecontainer.entity.Manifest
+import org.wycliffeassociates.resourcecontainer.entity.Project
+import java.io.File
+
+class BookMapper {
+
+    fun mapToTree(bookList: List<Book>, rc: ResourceContainer): Tree {
+        val root = constructRoot(rc)
+        val categories = getCategories(rc)
+
+        val nodes = categories
+                .map {category ->
+                    val categoryTree = Tree(category)
+                    categoryTree.addAll(
+                            getProjectsInCategory(rc.manifest, category.slug)
+                                    .map{
+                                       constructProjectTree( bookList,it, "project")
+                                    }
+                    )
+                    return@map categoryTree
+        }
+                .plus(
+                        getProjectsNotInCategories(rc.manifest, categories.map{it.slug})
+                                .map{
+                                    constructProjectTree(bookList, it, "project")
+                                }
+                )
+        root.addAll(nodes)
+        return root
+    }
+
+
+//    private fun constructContainerTree(rc: ResourceContainer): Tree {
+//        val root = constructRoot(rc)
+//        val categories = getCategories(rc)
+//        val nodes = categories
+//                .map { category ->
+//                    val categoryTree = Tree(category)
+//                    categoryTree.addAll(
+//                            getProjectsInCategory(rc.manifest, category.slug)
+//                                    .map {
+//                                        constructProjectTree(rc.dir, it, "project")
+//                                    }
+//                    )
+//                    return@map categoryTree
+//                }
+//                .plus(
+//                        getProjectsNotInCategories(rc.manifest, categories.map { it.slug })
+//                                .map {
+//                                    constructProjectTree(rc.dir, it, "project")
+//                                }
+//                )
+//        root.addAll(nodes)
+//        return root
+//    }
+
+    private fun constructProjectTree(bookList: List<Book>, project: Project, type: String): Tree {
+        //val projectDir = File(containerDir, project.path)
+       // val files = projectDir.listFiles()
+        val book = Tree(Collection(project.sort, project.identifier, type, project.title, null))
+        for(b in bookList) {
+            val chapters = arrayListOf<Tree>()
+            b.chapters?.map {
+                val slug = "${project.identifier}_${it.sort}"
+                val col = Collection(1, slug, "chapter", it.sort.toString(), null)
+                val tree = Tree(col)
+//                val chapChunk = Content(0, "chapter",
+//                        it.chunks?.first().chunkNumber,
+//                        it.chunks?.last()!!.sort, null)
+//                tree.addChild(TreeNode(chapChunk))
+                for (chunk in it.chunks!!) {
+                    val con = Content(chunk.sort, "label", chunk.sort, chunk.sort, null)
+                    tree.addChild(TreeNode(con))
+                }
+                chapters.add(tree)
+            }
+            book.addAll(chapters)
+        }
+        return book
+    }
+
+    private fun constructRoot(rc: ResourceContainer): Tree {
+        val dc = rc.manifest.dublinCore
+        val slug = dc.identifier
+        val title = dc.title
+        val label = dc.type
+        val collection = Collection(0, slug, label, title, null)
+        return Tree(collection)
+    }
+
+    private fun getCategories(rc: ResourceContainer): List<Collection> {
+        val collections = arrayListOf<Collection>()
+        val config = rc.config
+        config?.let {
+            if (it is OtterResourceContainerConfig) {
+                it.extendedDublinCore?.let {
+                    for (cat in it.categories) {
+                        collections.add(
+                                Collection(cat.sort, cat.identifier, cat.identifier, cat.title, null)
+                        )
+                    }
+                }
+            }
+        }
+        return collections
+    }
+
+
+    private fun getProjectsInCategory(manifest: Manifest, categorySlug: String): List<Project> {
+        val projects = manifest.projects.filter { it.categories.contains(categorySlug) }
+        return projects
+    }
+
+    private fun getProjectsNotInCategories(manifest: Manifest, categorySlugs: List<String>): List<Project> {
+        val projects = manifest.projects.filter { it.categories.intersect(categorySlugs).isEmpty() }
+        return projects
+    }
+}
