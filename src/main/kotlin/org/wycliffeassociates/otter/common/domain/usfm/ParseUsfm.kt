@@ -1,4 +1,4 @@
-package org.wycliffeassociates.otter.common.domain.parse.usfm
+package org.wycliffeassociates.otter.common.domain.usfm
 
 import java.io.File
 
