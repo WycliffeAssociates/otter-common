@@ -1,22 +1,22 @@
 package org.wycliffeassociates.otter.common.domain.md
 
-import java.io.File
+import java.io.BufferedReader
 
-data class HelpResource(var snippet: String, var helpText: String)
+data class HelpResource(var title: String, var text: String)
 
 class HelpResourceList: ArrayList<HelpResource>()
 
 // TODO: make companion object?
 // TODO: Check if there is a #?
 // TODO: Help type enums? (tn, tq)
-class ParseMd(val file: File) {
+class ParseMd {
 
     val helpResourceList = HelpResourceList()
 
-    fun parse(): HelpResourceList {
-        val reader = file.bufferedReader()
+    fun parse(reader: BufferedReader): HelpResourceList {
+
         reader.useLines {
-            // Each resource uses 4 lines: snippet, empty line, text, empty line
+            // Each resource uses 4 lines: snippet/question, empty line, note/answer, empty line
             parseFromSequence(it.chunked(4))
         }
 
@@ -27,13 +27,13 @@ class ParseMd(val file: File) {
 
         sequence.forEach {
 
-            // Assume each snippet starts with "# ", so take the substring starting after this prefix
-            val snippet = it.get(0).substring(2)
+            // Assume each snippet/question starts with "# ", so take the substring starting after this prefix
+            val title = it.get(0).substring(2)
 
-            // Snippets and text are separated by one line, so skip a line
-            val helpText = it.get(2)
+            // Snippets/questions and notes/answers are separated by one line, so skip a line
+            val text = it.get(2)
 
-            helpResourceList.add(HelpResource(snippet, helpText))
+            helpResourceList.add(HelpResource(title, text))
         }
     }
 }
