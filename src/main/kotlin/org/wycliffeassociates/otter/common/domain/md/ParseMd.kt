@@ -2,38 +2,55 @@ package org.wycliffeassociates.otter.common.domain.md
 
 import java.io.BufferedReader
 
-data class HelpResource(var title: String, var text: String)
+// TODO: Add Help type enum to HelpResource? (tn, tq)
+data class HelpResource(var title: String, var body: String)
 
 class HelpResourceList: ArrayList<HelpResource>()
 
-// TODO: make companion object?
-// TODO: Check if there is a #?
-// TODO: Help type enums? (tn, tq)
 class ParseMd {
 
-    val helpResourceList = HelpResourceList()
+    companion object {
 
-    fun parse(reader: BufferedReader): HelpResourceList {
+        private val isTitleRegex = Regex("^#+\\s*[^#\\s]+")
+        private val titleTextRegex = Regex("^#+\\s*")
 
-        reader.useLines {
-            // Each resource uses 4 lines: snippet/question, empty line, note/answer, empty line
-            parseFromSequence(it.chunked(4))
+        fun parse(reader: BufferedReader): HelpResourceList {
+
+            val helpResourceList = HelpResourceList()
+
+            reader.forEachLine {
+
+                if (it.isEmpty())
+                    return@forEachLine // continue
+
+                // If we have a title, add a new help resource to the end of the list
+                if (isTitleLine(it)) {
+
+                    val titleText = getTitleText(it)
+                    helpResourceList.add(HelpResource(titleText, ""))
+                }
+                // Found body text. Add the body to the help resource at the end of the list
+                // If the list is empty, the body text will be discarded.
+                else if (helpResourceList.size > 0) {
+
+                    if (helpResourceList.last().body != "") {
+                        helpResourceList.last().body += " "
+                    }
+                    helpResourceList.last().body += it
+                }
+            }
+
+            return helpResourceList
         }
 
-        return helpResourceList
-    }
+        internal fun getTitleText(line: String): String {
 
-    private fun parseFromSequence(sequence: Sequence<List<String>>) {
+            return line.removePrefix(titleTextRegex.find(line)!!.value)
+        }
 
-        sequence.forEach {
+        internal fun isTitleLine(line: String): Boolean {
 
-            // Assume each snippet/question starts with "# ", so take the substring starting after this prefix
-            val title = it.get(0).substring(2)
-
-            // Snippets/questions and notes/answers are separated by one line, so skip a line
-            val text = it.get(2)
-
-            helpResourceList.add(HelpResource(title, text))
+            return isTitleRegex.containsMatchIn(line)
         }
     }
 }
