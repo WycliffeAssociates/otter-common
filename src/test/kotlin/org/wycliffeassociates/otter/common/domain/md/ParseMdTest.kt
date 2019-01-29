@@ -6,106 +6,73 @@ import java.io.BufferedReader
 import java.io.ByteArrayInputStream
 import java.lang.AssertionError
 
+// Input is List<String>, expected output is List<HelpResource>
+typealias TestCaseForParser = Pair<List<String>, List<HelpResource>>
+
 class ParseMdTest {
 
     // These test cases are designed to test the creation of the HelpResource data objects
     // (including the branching logic of the parse() function)
-    private val testParseCases = listOf(
-            mapOf(
-                    "lines" to listOf(
-                            "# Title 1",
-                            "",
-                            "Body 1",
-                            "",
-                            "# Title 2",
-                            "",
-                            "Body 2"
-                    ),
-                    "expected" to arrayListOf(
-                            HelpResource("Title 1", "Body 1"),
-                            HelpResource("Title 2", "Body 2")
-                    )
+    private val testParseCases: List<TestCaseForParser> = listOf(
+            listOf(
+                    "# Title 1",
+                    "",
+                    "Body 1",
+                    "",
+                    "# Title 2",
+                    "",
+                    "Body 2"
+            ) to
+            listOf(
+                    HelpResource("Title 1", "Body 1"),
+                    HelpResource("Title 2", "Body 2")
             ),
-            mapOf(
-                    "lines" to listOf(
-                            "# Title 1",
-                            "",
-                            "Body 1",
-                            "",
-                            "Body 2", // Second line of body text
-                            "",
-                            "# Title 3",
-                            "Body 3", // No space before body text
-                            "",
-                            "# Title 4", // Heading with no body text
-                            "",
-                            "# Title 5",
-                            "",
-                            "Body 5",
-                            "# Title 6", // No space before title text
-                            "",
-                            "Body 6"
-                    ),
-                    "expected" to arrayListOf(
-                            HelpResource("Title 1", "Body 1 Body 2"),
-                            HelpResource("Title 3", "Body 3"),
-                            HelpResource("Title 4", ""),
-                            HelpResource("Title 5", "Body 5"),
-                            HelpResource("Title 6", "Body 6")
-                    )
+
+            listOf(
+                    "# Title 1",
+                    "",
+                    "Body 1",
+                    "",
+                    "Body 2", // Second line of body text
+                    "",
+                    "# Title 3",
+                    "Body 3", // No space before body text
+                    "",
+                    "# Title 4", // Heading with no body text
+                    "",
+                    "# Title 5",
+                    "",
+                    "Body 5",
+                    "# Title 6", // No space before title text
+                    "",
+                    "Body 6"
+            ) to
+            listOf(
+                    HelpResource("Title 1", "Body 1 Body 2"),
+                    HelpResource("Title 3", "Body 3"),
+                    HelpResource("Title 4", ""),
+                    HelpResource("Title 5", "Body 5"),
+                    HelpResource("Title 6", "Body 6")
             )
     )
 
     // Testing title text extraction
     private val testGetTitleTextCases = listOf(
-            mapOf(
-                    "line" to "# Hello",
-                    "expected" to "Hello"
-            ),
-            mapOf(
-                    "line" to "#  Matthew",
-                    "expected" to "Matthew"
-            ),
-            mapOf(
-                    "line" to "## John said",
-                    "expected" to "John said"
-            ),
-            mapOf(
-                    "line" to "# John said # hello",
-                    "expected" to "John said # hello"
-            ),
-            mapOf(
-                    "line" to "#John said hello",
-                    "expected" to "John said hello"
-            )
+            "# Hello" to "Hello",
+            "#  Matthew" to "Matthew",
+            "## John said" to "John said",
+            "# John said # hello" to "John said # hello",
+            "#John said hello" to "John said hello"
     )
 
     // Testing title recognition
     private val testIsTitleLineCases = listOf(
-            mapOf(
-                    "line" to "# Matthew",
-                    "expected" to true
-            ),
-            mapOf(
-                    "line" to "## Matthew",
-                    "expected" to true
-            ),
-            mapOf(
-                    "line" to "",
-                    "expected" to false
-            ),
-            mapOf(
-                    "line" to "Matthew # said hello",
-                    "expected" to false
-            ),
-            mapOf(
-                    "line" to "# ",
-                    "expected" to false
-            ),
-            mapOf(
-                    "line" to "#Matthew",
-                    "expected" to true
-            )
+            "# Matthew" to true,
+            "## Matthew" to true,
+            "#Matthew" to true,
+            "" to false,
+            "Matthew # said hello" to false,
+            "# " to false
     )
 
     private fun checkLineOperatorFunction(input: String, output: Any, expected: Any) {
@@ -125,9 +92,9 @@ class ParseMdTest {
 
         testGetTitleTextCases.forEach {
 
-            val output = ParseMd.getTitleText(it["line"] as String)
+            val output = ParseMd.getTitleText(it.first)
 
-            checkLineOperatorFunction(it["line"] as String, output, it["expected"] as String)
+            checkLineOperatorFunction(it.first, output, it.second)
         }
     }
 
@@ -136,9 +103,9 @@ class ParseMdTest {
 
         testIsTitleLineCases.forEach {
 
-            val output = ParseMd.isTitleLine(it["line"] as String)
+            val output = ParseMd.isTitleLine(it.first)
 
-            checkLineOperatorFunction(it["line"] as String, output, it["expected"] as Boolean)
+            checkLineOperatorFunction(it.first, output, it.second)
         }
     }
 
@@ -148,7 +115,7 @@ class ParseMdTest {
 
         val stream: ByteArrayInputStream = lines.joinToString(lineSeparator).byteInputStream()
 
-        return BufferedReader(stream.bufferedReader())
+        return stream.bufferedReader()
     }
 
     @Test
@@ -156,17 +123,15 @@ class ParseMdTest {
 
         testParseCases.forEach {
 
-            val expected = it["expected"]
-
-            val bufferedReader = getBufferedReader(it["lines"] as List<String>)
+            val bufferedReader = getBufferedReader(it.first)
 
             val helpResourceList = ParseMd.parse(bufferedReader)
 
             try {
-                assertEquals(expected, helpResourceList)
+                assertEquals(it.second, helpResourceList)
             } catch (e: AssertionError) {
-                println("Input: " + it["lines"].toString())
-                println("Expected: " + expected.toString())
+                println("Input: " + it.first.toString())
+                println("Expected: " + it.second.toString())
                 println("Result: " + helpResourceList.toString())
                 throw e
             }

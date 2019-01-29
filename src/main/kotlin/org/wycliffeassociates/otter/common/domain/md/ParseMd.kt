@@ -5,8 +5,6 @@ import java.io.BufferedReader
 // TODO: Add Help type enum to HelpResource? (tn, tq)
 data class HelpResource(var title: String, var body: String)
 
-class HelpResourceList: ArrayList<HelpResource>()
-
 class ParseMd {
 
     companion object {
@@ -14,9 +12,9 @@ class ParseMd {
         private val isTitleRegex = Regex("^#+\\s*[^#\\s]+")
         private val titleTextRegex = Regex("^#+\\s*")
 
-        fun parse(reader: BufferedReader): HelpResourceList {
+        fun parse(reader: BufferedReader): List<HelpResource> {
 
-            val helpResourceList = HelpResourceList()
+            val helpResourceList = ArrayList<HelpResource>()
 
             reader.forEachLine {
 
