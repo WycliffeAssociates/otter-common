@@ -125,7 +125,7 @@ class ImportResourceContainer(
                     categoryNode
                 }
             }
-            val projectResult = constructProjectTree(container.dir, project)
+            val projectResult = UsfmProjectReader().constructProjectTree(container, project)
             if (projectResult.first == Result.SUCCESS) {
                 parent.addChild(projectResult.second)
             } else {
@@ -133,73 +133,5 @@ class ImportResourceContainer(
             }
         }
         return Pair(Result.SUCCESS, root)
-    }
-
-    private fun constructProjectTree(containerDir: File, project: Project): Pair<Result, Tree> {
-        var result = Result.SUCCESS
-        val projectLocation = containerDir.resolve(project.path)
-        val projectTree = Tree(project.toCollection())
-        if (projectLocation.isDirectory) {
-            val files = projectLocation.listFiles()
-            for (file in files) {
-                result = parseFileIntoProjectTree(file, projectTree, project.identifier)
-                if (result != Result.SUCCESS) return Pair(result, Tree(Unit))
-            }
-        } else {
-            // Single file
-            result = parseFileIntoProjectTree(projectLocation, projectTree, project.identifier)
-            if (result != Result.SUCCESS) return Pair(result, Tree(Unit))
-        }
-        return Pair(result, projectTree)
-    }
-
-    private fun parseFileIntoProjectTree(file: File, root: Tree, projectIdentifier: String): Result {
-        return when (file.extension) {
-            "usfm", "USFM" -> {
-                try {
-                    val chapters = parseUSFMToChapterTrees(file, projectIdentifier)
-                    root.addAll(chapters)
-                    Result.SUCCESS
-                } catch (e: RuntimeException) {
-                    Result.INVALID_CONTENT
-                }
-            }
-            else -> { Result.UNSUPPORTED_CONTENT }
-        }
-    }
-
-    private fun parseUSFMToChapterTrees(usfmFile: File, projectSlug: String): List<Tree> {
-        if (usfmFile.extension != "usfm") {
-            throw IOException("Not a USFM file")
-        }
-
-        val doc = ParseUsfm(usfmFile).parse()
-        return doc.chapters.map { chapter ->
-            val chapterSlug = "${projectSlug}_${chapter.key}"
-            val chapterCollection = Collection(
-                    chapter.key,
-                    chapterSlug,
-                    "chapter",
-                    chapter.key.toString(),
-                    null
-            )
-            val chapterTree = Tree(chapterCollection)
-            // create a chunk for the whole chapter
-            val chapChunk = Content(
-                    0,
-                    "chapter",
-                    chapter.value.values.first().number,
-                    chapter.value.values.last().number,
-                    null
-            )
-            chapterTree.addChild(TreeNode(chapChunk))
-
-            // Create content for each verse
-            for (verse in chapter.value.values) {
-                val content = Content(verse.number, "verse", verse.number, verse.number, null)
-                chapterTree.addChild(TreeNode(content))
-            }
-            return@map chapterTree
-        }
     }
 }
