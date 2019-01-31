@@ -15,20 +15,10 @@ class ImportResourceContainer(
         private val collectionRepository: ICollectionRepository,
         private val directoryProvider: IDirectoryProvider
 ) {
-    enum class Result {
-        SUCCESS,
-        INVALID_RC,
-        INVALID_CONTENT,
-        UNSUPPORTED_CONTENT,
-        IMPORT_ERROR,
-        LOAD_RC_ERROR,
-        ALREADY_EXISTS
-    }
-
-    fun import(file: File): Single<Result> {
+    fun import(file: File): Single<ImportResult> {
         return when {
             file.isDirectory -> importContainerDirectory(file)
-            else -> Single.just(Result.INVALID_RC)
+            else -> Single.just(ImportResult.INVALID_RC)
         }
     }
 
@@ -37,20 +27,20 @@ class ImportResourceContainer(
                 .just(directory)
                 .flatMap { containerDir ->
                     // Is this a valid resource container
-                    if (!validateResourceContainer(containerDir)) return@flatMap Single.just(Result.INVALID_RC)
+                    if (!validateResourceContainer(containerDir)) return@flatMap Single.just(ImportResult.INVALID_RC)
 
                     // Load the external container to get the metadata we need to figure out where to copy to
                     val extContainer = try {
                         ResourceContainer.load(containerDir, OtterResourceContainerConfig())
                     } catch (e: Exception) {
                         // Could be checked or unchecked exception from RC library
-                        return@flatMap Single.just(Result.LOAD_RC_ERROR)
+                        return@flatMap Single.just(ImportResult.LOAD_RC_ERROR)
                     }
                     val internalDir = directoryProvider.getSourceContainerDirectory(extContainer)
                     if (internalDir.exists() && internalDir.listFiles().isNotEmpty()) {
                         // Collision on disk: Can't import the resource container
                         // Assumes that filesystem internal app directory and database are in sync
-                        return@flatMap Single.just(Result.ALREADY_EXISTS)
+                        return@flatMap Single.just(ImportResult.ALREADY_EXISTS)
                     }
 
                     // Copy to the internal directory
@@ -60,20 +50,20 @@ class ImportResourceContainer(
                     val container = try {
                          ResourceContainer.load(newDirectory, OtterResourceContainerConfig())
                     } catch (e: Exception) {
-                        return@flatMap cleanUp(newDirectory, Result.LOAD_RC_ERROR)
+                        return@flatMap cleanUp(newDirectory, ImportResult.LOAD_RC_ERROR)
                     }
 
                     val (constructResult, tree) = constructContainerTree(container)
-                    if (constructResult != Result.SUCCESS) return@flatMap cleanUp(newDirectory, constructResult)
+                    if (constructResult != ImportResult.SUCCESS) return@flatMap cleanUp(newDirectory, constructResult)
 
                     return@flatMap collectionRepository
                             .importResourceContainer(container, tree, container.manifest.dublinCore.language.identifier)
-                            .toSingle { Result.SUCCESS }
+                            .toSingle { ImportResult.SUCCESS }
                             .doOnError { newDirectory.deleteRecursively() }
                 }
                 .subscribeOn(Schedulers.io())
 
-    private fun cleanUp(containerDir: File, result: Result): Single<Result> = Single.fromCallable {
+    private fun cleanUp(containerDir: File, result: ImportResult): Single<ImportResult> = Single.fromCallable {
         containerDir.deleteRecursively()
         return@fromCallable result
     }
@@ -92,17 +82,17 @@ class ImportResourceContainer(
         return destinationDirectory
     }
 
-    private fun makeExpandedContainer(container: ResourceContainer): Result {
+    private fun makeExpandedContainer(container: ResourceContainer): ImportResult {
         val dublinCore = container.manifest.dublinCore
         if (dublinCore.type == "bundle" && dublinCore.format.startsWith("text/usfm")) {
-            return if (container.expandUSFMBundle()) Result.SUCCESS else Result.INVALID_CONTENT
+            return if (container.expandUSFMBundle()) ImportResult.SUCCESS else ImportResult.INVALID_CONTENT
         }
-        return Result.SUCCESS
+        return ImportResult.SUCCESS
     }
 
-    private fun constructContainerTree(container: ResourceContainer): Pair<Result, Tree> {
+    private fun constructContainerTree(container: ResourceContainer): Pair<ImportResult, Tree> {
         val projectReader = IProjectReader.build(container.manifest.dublinCore.format)
-                ?: return Pair(Result.UNSUPPORTED_CONTENT, Tree(Unit))
+                ?: return Pair(ImportResult.UNSUPPORTED_CONTENT, Tree(Unit))
         val root = Tree(container.toCollection())
         val categoryInfo = container.otterConfigCategories()
         for (project in container.manifest.projects) {
@@ -125,12 +115,12 @@ class ImportResourceContainer(
                 }
             }
             val projectResult = projectReader.constructProjectTree(container, project)
-            if (projectResult.first == Result.SUCCESS) {
+            if (projectResult.first == ImportResult.SUCCESS) {
                 parent.addChild(projectResult.second)
             } else {
                 return Pair(projectResult.first, Tree(Unit))
             }
         }
-        return Pair(Result.SUCCESS, root)
+        return Pair(ImportResult.SUCCESS, root)
     }
 }

@@ -4,7 +4,7 @@ import org.wycliffeassociates.otter.common.collections.tree.Tree
 import org.wycliffeassociates.otter.common.collections.tree.TreeNode
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Content
-import org.wycliffeassociates.otter.common.domain.resourcecontainer.ImportResourceContainer
+import org.wycliffeassociates.otter.common.domain.resourcecontainer.ImportResult
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.toCollection
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
@@ -15,37 +15,37 @@ import java.io.IOException
 class UsfmProjectReader: IProjectReader {
     override fun constructProjectTree(
             container: ResourceContainer, project: Project
-    ): Pair<ImportResourceContainer.Result, Tree> {
-        var result = ImportResourceContainer.Result.SUCCESS
+    ): Pair<ImportResult, Tree> {
+        var result = ImportResult.SUCCESS
         val projectLocation = container.dir.resolve(project.path)
         val projectTree = Tree(project.toCollection())
         if (projectLocation.isDirectory) {
             val files = projectLocation.listFiles()
             for (file in files) {
                 result = parseFileIntoProjectTree(file, projectTree, project.identifier)
-                if (result != ImportResourceContainer.Result.SUCCESS) return Pair(result, Tree(Unit))
+                if (result != ImportResult.SUCCESS) return Pair(result, Tree(Unit))
             }
         } else {
             // Single file
             result = parseFileIntoProjectTree(projectLocation, projectTree, project.identifier)
-            if (result != ImportResourceContainer.Result.SUCCESS) return Pair(result, Tree(Unit))
+            if (result != ImportResult.SUCCESS) return Pair(result, Tree(Unit))
         }
         return Pair(result, projectTree)
     }
 
-    private fun parseFileIntoProjectTree(file: File, root: Tree, projectIdentifier: String): ImportResourceContainer.Result {
+    private fun parseFileIntoProjectTree(file: File, root: Tree, projectIdentifier: String): ImportResult {
         return when (file.extension) {
             "usfm", "USFM" -> {
                 try {
                     val chapters = parseUSFMToChapterTrees(file, projectIdentifier)
                     root.addAll(chapters)
-                    ImportResourceContainer.Result.SUCCESS
+                    ImportResult.SUCCESS
                 } catch (e: RuntimeException) {
-                    ImportResourceContainer.Result.INVALID_CONTENT
+                    ImportResult.INVALID_CONTENT
                 }
             }
             else -> {
-                ImportResourceContainer.Result.UNSUPPORTED_CONTENT
+                ImportResult.UNSUPPORTED_CONTENT
             }
         }
     }
