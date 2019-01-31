@@ -4,7 +4,7 @@ import io.reactivex.Single
 import io.reactivex.schedulers.Schedulers
 import org.wycliffeassociates.otter.common.collections.tree.Tree
 import org.wycliffeassociates.otter.common.data.model.Collection
-import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.usfm.UsfmProjectReader
+import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
 import org.wycliffeassociates.otter.common.persistence.repositories.ICollectionRepository
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
@@ -101,6 +101,8 @@ class ImportResourceContainer(
     }
 
     private fun constructContainerTree(container: ResourceContainer): Pair<Result, Tree> {
+        val projectReader = IProjectReader.build(container.manifest.dublinCore.format)
+                ?: return Pair(Result.UNSUPPORTED_CONTENT, Tree(Unit))
         val root = Tree(container.toCollection())
         val categoryInfo = container.otterConfigCategories()
         for (project in container.manifest.projects) {
@@ -122,7 +124,7 @@ class ImportResourceContainer(
                     categoryNode
                 }
             }
-            val projectResult = UsfmProjectReader().constructProjectTree(container, project)
+            val projectResult = projectReader.constructProjectTree(container, project)
             if (projectResult.first == Result.SUCCESS) {
                 parent.addChild(projectResult.second)
             } else {
