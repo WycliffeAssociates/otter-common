@@ -3,14 +3,11 @@ package org.wycliffeassociates.otter.common.domain.resourcecontainer
 import io.reactivex.Single
 import io.reactivex.schedulers.Schedulers
 import org.wycliffeassociates.otter.common.collections.tree.Tree
-import org.wycliffeassociates.otter.common.collections.tree.TreeNode
 import org.wycliffeassociates.otter.common.data.model.Collection
-import org.wycliffeassociates.otter.common.data.model.Content
-import org.wycliffeassociates.otter.common.domain.usfm.ParseUsfm
+import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.usfm.UsfmProjectReader
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
 import org.wycliffeassociates.otter.common.persistence.repositories.ICollectionRepository
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
-import org.wycliffeassociates.resourcecontainer.entity.Project
 import java.io.File
 import java.io.IOException
 

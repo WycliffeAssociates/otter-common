@@ -1,16 +1,18 @@
-package org.wycliffeassociates.otter.common.domain.resourcecontainer
+package org.wycliffeassociates.otter.common.domain.resourcecontainer.project.usfm
 
 import org.wycliffeassociates.otter.common.collections.tree.Tree
 import org.wycliffeassociates.otter.common.collections.tree.TreeNode
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Content
-import org.wycliffeassociates.otter.common.domain.usfm.ParseUsfm
+import org.wycliffeassociates.otter.common.domain.resourcecontainer.ImportResourceContainer
+import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
+import org.wycliffeassociates.otter.common.domain.resourcecontainer.toCollection
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
 import org.wycliffeassociates.resourcecontainer.entity.Project
 import java.io.File
 import java.io.IOException
 
-class UsfmProjectReader: IProjectFileReader {
+class UsfmProjectReader: IProjectReader {
     override fun constructProjectTree(
             container: ResourceContainer, project: Project
     ): Pair<ImportResourceContainer.Result, Tree> {
@@ -42,7 +44,9 @@ class UsfmProjectReader: IProjectFileReader {
                     ImportResourceContainer.Result.INVALID_CONTENT
                 }
             }
-            else -> { ImportResourceContainer.Result.UNSUPPORTED_CONTENT }
+            else -> {
+                ImportResourceContainer.Result.UNSUPPORTED_CONTENT
+            }
         }
     }
 
