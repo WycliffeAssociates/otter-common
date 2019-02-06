@@ -8,14 +8,14 @@ import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Content
 import org.wycliffeassociates.otter.common.domain.usfm.ParseUsfm
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
-import org.wycliffeassociates.otter.common.persistence.repositories.ICollectionRepository
+import org.wycliffeassociates.otter.common.persistence.IRcImporter
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
 import org.wycliffeassociates.resourcecontainer.entity.Project
 import java.io.File
 import java.io.IOException
 
 class ImportResourceContainer(
-        private val collectionRepository: ICollectionRepository,
+        private val rcImporter: IRcImporter,
         private val directoryProvider: IDirectoryProvider
 ) {
     enum class Result {
@@ -69,7 +69,7 @@ class ImportResourceContainer(
                     val (constructResult, tree) = constructContainerTree(container)
                     if (constructResult != Result.SUCCESS) return@flatMap cleanUp(newDirectory, constructResult)
 
-                    return@flatMap collectionRepository
+                    return@flatMap rcImporter
                             .importResourceContainer(container, tree, container.manifest.dublinCore.language.identifier)
                             .toSingle { Result.SUCCESS }
                             .doOnError { newDirectory.deleteRecursively() }
