@@ -53,6 +53,10 @@ class MarkdownProjectReader: IProjectReader {
                     titleKey = "$id",
                     resourceContainer = null)
 
+    private fun content(sort: Int, label: String, id: Int, text: String): Content? =
+            if (text.isEmpty()) null
+            else Content(sort, label, id, id, null, text, FORMAT)
+
     private fun contentList(f: File): List<Content>? =
             bufferedReaderProvider(f)
                     ?.let { contentList(it, fileToId(f)) }
@@ -60,10 +64,12 @@ class MarkdownProjectReader: IProjectReader {
     private fun contentList(brp: () -> BufferedReader, fileId: Int): List<Content> {
         val helpResources = brp().use { ParseMd.parse(it) }
         var sort = 1
-        return helpResources.flatMap { helpResource -> listOf(
-                    Content(sort++, "title", fileId, fileId, null, helpResource.title, FORMAT),
-                    Content(sort++, "body", fileId, fileId, null, helpResource.body, FORMAT)
-            )}
+        return helpResources.flatMap { helpResource ->
+            listOfNotNull(
+                    content(sort++, "title", fileId, helpResource.title),
+                    content(sort++, "body", fileId, helpResource.body)
+            )
+        }
     }
 }
 
