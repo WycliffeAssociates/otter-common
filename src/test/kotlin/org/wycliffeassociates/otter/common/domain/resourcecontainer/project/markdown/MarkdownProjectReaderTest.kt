@@ -6,10 +6,9 @@ import org.wycliffeassociates.otter.common.collections.tree.OtterTree
 import org.wycliffeassociates.otter.common.collections.tree.OtterTreeNode
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
 import java.io.File
-import java.nio.file.Paths
 
 class MarkdownProjectReaderTest {
-    private val pwd = Paths.get("").toAbsolutePath().toFile()
+    private val pwd = File(System.getProperty("user.dir"))
     private val fileTree: OtterTree<File> = pwd.buildFileTree()
 
     private fun <T> dfs(tree: OtterTreeNode<T>, f: (T, List<T>) -> Boolean, acc: List<T> = listOf()): T? {
