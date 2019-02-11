@@ -2,17 +2,18 @@ package org.wycliffeassociates.otter.common.domain.resourcecontainer
 
 import io.reactivex.Single
 import io.reactivex.schedulers.Schedulers
+import org.apache.commons.io.FileUtils
 import org.wycliffeassociates.otter.common.collections.tree.Tree
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
-import org.wycliffeassociates.otter.common.persistence.IRcTreeImporter
+import org.wycliffeassociates.otter.common.persistence.IResourceContainerTreeImporter
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
 import java.io.File
 import java.io.IOException
 
 class ImportResourceContainer(
-        private val rcTreeImporter: IRcTreeImporter,
+        private val resourceContainerTreeImporter: IResourceContainerTreeImporter,
         private val directoryProvider: IDirectoryProvider
 ) {
     fun import(file: File): Single<ImportResult> {
@@ -43,8 +44,11 @@ class ImportResourceContainer(
                         return@flatMap Single.just(ImportResult.ALREADY_EXISTS)
                     }
 
+                    val start = System.currentTimeMillis()
                     // Copy to the internal directory
                     val newDirectory = copyToInternalDirectory(containerDir, internalDir)
+                    val end = System.currentTimeMillis()
+                    println("Elapsed time: ${end - start}")
 
                     // Load the internal container
                     val container = try {
@@ -56,7 +60,7 @@ class ImportResourceContainer(
                     val (constructResult, tree) = constructContainerTree(container)
                     if (constructResult != ImportResult.SUCCESS) return@flatMap cleanUp(newDirectory, constructResult)
 
-                    return@flatMap rcTreeImporter
+                    return@flatMap resourceContainerTreeImporter
                             .importResourceContainer(container, tree, container.manifest.dublinCore.language.identifier)
                             .toSingle { ImportResult.SUCCESS }
                             .doOnError { newDirectory.deleteRecursively() }
@@ -74,10 +78,11 @@ class ImportResourceContainer(
         // Copy the resource container into the correct directory
         if (dir.absoluteFile != destinationDirectory) {
             // Need to copy the resource container into the internal directory
-            val success = dir.copyRecursively(destinationDirectory, true)
-            if (!success) {
-                throw IOException("Could not copy resource container ${dir.name} to resource container directory")
-            }
+//            val success = dir.copyRecursively(destinationDirectory, true)
+            FileUtils.copyDirectory(dir, destinationDirectory)
+//            if (!success) {
+//                throw IOException("Could not copy resource container ${dir.name} to resource container directory")
+//            }
         }
         return destinationDirectory
     }
