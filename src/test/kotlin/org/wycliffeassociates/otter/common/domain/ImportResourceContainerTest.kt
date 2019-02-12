@@ -64,6 +64,10 @@ class ImportResourceContainerTest {
 }
 
 class MockContentRepository: IContentRepository {
+    override fun getByCollectionIdAndStart(collectionId: Int, start: Int): Maybe<Content> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     override fun insertForCollection(content: Content, collection: Collection): Single<Int> {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
@@ -111,10 +115,6 @@ class MockCollectionRepository: ICollectionRepository {
     }
 
     override fun deriveProject(source: Collection, language: Language): Completable {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun importResourceContainer(rc: ResourceContainer, tree: Tree, languageSlug: String): Completable {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
