@@ -11,8 +11,6 @@ interface IContentRepository : IRepository<Content> {
     fun insertForCollection(content: Content, collection: Collection): Single<Int>
     // Get all the chunks for a collection
     fun getByCollection(collection: Collection): Single<List<Content>>
-    // Get the chunk in a collection by the start field
-    fun getByCollectionIdAndStart(collectionId: Int, start: Int): Maybe<Content>
     // Get sources this content is derived from
     fun getSources(content: Content): Single<List<Content>>
     // Update the sources for a content
