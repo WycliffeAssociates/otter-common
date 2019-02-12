@@ -17,14 +17,15 @@ import java.util.*
 private const val FORMAT = "text/markdown"
 private val extensions = Regex(".+\\.(md|mkdn?|mdown|markdown)$", RegexOption.IGNORE_CASE)
 
-class MarkdownProjectReader: IProjectReader {
+class MarkdownProjectReader() : IProjectReader {
     override fun constructProjectTree(container: ResourceContainer, project: Project)
             : Pair<ImportResult, Tree> {
         val projectRoot = container.dir.resolve(project.path)
+        val collectionKey = container.manifest.dublinCore.identifier
         return projectRoot
                 .buildFileTree()
                 .filterMarkdownFiles()
-                ?.map<Any> { f -> contentList(f) ?: collection(f, projectRoot) }
+                ?.map<Any> { f -> contentList(f) ?: collection(collectionKey, f, projectRoot) }
                 ?.flattenContent()
                 ?.let { Pair(ImportResult.SUCCESS, it) }
                 ?: Pair(ImportResult.LOAD_RC_ERROR, Tree(Unit))
@@ -42,14 +43,14 @@ class MarkdownProjectReader: IProjectReader {
     private fun bufferedReaderProvider(f: File): (() -> BufferedReader)? =
             if (f.isFile) { { f.bufferedReader() } } else null
 
-    private fun collection(f: File, projectRoot: File): Collection =
-            collection(fileToSlug(f, projectRoot), fileToId(f))
+    private fun collection(key: String, f: File, projectRoot: File): Collection =
+            collection(key, fileToSlug(f, projectRoot), fileToId(f))
 
-    private fun collection(slug: String, id: Int): Collection =
+    private fun collection(key: String, slug: String, id: Int): Collection =
             Collection(
                     sort = id,
                     slug = slug,
-                    labelKey = "helpcollection",
+                    labelKey = key,
                     titleKey = "$id",
                     resourceContainer = null)
 
