@@ -8,7 +8,7 @@ import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Content
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.ImportResult
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
-import org.wycliffeassociates.resourcecontainer.ResourceContainer
+import org.wycliffeassociates.resourcecontainer.DirResourceContainer
 import org.wycliffeassociates.resourcecontainer.entity.Project
 import java.io.BufferedReader
 import java.io.File
@@ -18,7 +18,7 @@ private const val FORMAT = "text/markdown"
 private val extensions = Regex(".+\\.(md|mkdn?|mdown|markdown)$", RegexOption.IGNORE_CASE)
 
 class MarkdownProjectReader() : IProjectReader {
-    override fun constructProjectTree(container: ResourceContainer, project: Project)
+    override fun constructProjectTree(container: DirResourceContainer, project: Project)
             : Pair<ImportResult, Tree> {
         val projectRoot = container.dir.resolve(project.path)
         val collectionKey = container.manifest.dublinCore.identifier

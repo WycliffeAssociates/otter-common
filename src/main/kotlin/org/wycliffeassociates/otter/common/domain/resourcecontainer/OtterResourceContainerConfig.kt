@@ -8,11 +8,16 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import org.wycliffeassociates.resourcecontainer.Config
 import java.io.File
 import java.io.IOException
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
 
 class OtterResourceContainerConfig : Config {
-
     var config: OtterConfig? = null
     var extendedDublinCore: ExtendedDublinCore? = null
+
+    override fun readFromZip(zip: ZipFile, zipEntry: ZipEntry): Config {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
 
     override fun read(configFile: File): Config {
         if (configFile.exists()) {
