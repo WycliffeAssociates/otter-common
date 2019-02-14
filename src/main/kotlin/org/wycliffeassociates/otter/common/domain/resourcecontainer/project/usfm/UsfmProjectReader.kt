@@ -7,14 +7,14 @@ import org.wycliffeassociates.otter.common.data.model.Content
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.ImportResult
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.toCollection
-import org.wycliffeassociates.resourcecontainer.ResourceContainer
+import org.wycliffeassociates.resourcecontainer.DirResourceContainer
 import org.wycliffeassociates.resourcecontainer.entity.Project
 import java.io.File
 import java.io.IOException
 
 class UsfmProjectReader: IProjectReader {
     override fun constructProjectTree(
-            container: ResourceContainer, project: Project
+            container: DirResourceContainer, project: Project
     ): Pair<ImportResult, Tree> {
         var result = ImportResult.SUCCESS
         val projectLocation = container.dir.resolve(project.path)

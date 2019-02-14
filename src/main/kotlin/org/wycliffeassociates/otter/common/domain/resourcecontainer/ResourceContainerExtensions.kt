@@ -2,11 +2,11 @@ package org.wycliffeassociates.otter.common.domain.resourcecontainer
 
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.usfm.ParseUsfm
-import org.wycliffeassociates.resourcecontainer.ResourceContainer
+import org.wycliffeassociates.resourcecontainer.DirResourceContainer
 import org.wycliffeassociates.resourcecontainer.entity.Project
 import java.io.File
 
-fun ResourceContainer.expandUSFMBundle(): Boolean {
+fun DirResourceContainer.expandUSFMBundle(): Boolean {
     manifest.dublinCore.type = "book"
     for (project in manifest.projects) {
         val result = project.expandUSFMProject(dir)
@@ -16,7 +16,7 @@ fun ResourceContainer.expandUSFMBundle(): Boolean {
     return true
 }
 
-fun ResourceContainer.toCollection(): Collection {
+fun DirResourceContainer.toCollection(): Collection {
     return Collection(
             0,
             manifest.dublinCore.identifier,
@@ -26,7 +26,7 @@ fun ResourceContainer.toCollection(): Collection {
     )
 }
 
-fun ResourceContainer.otterConfigCategories(): List<Category> {
+fun DirResourceContainer.otterConfigCategories(): List<Category> {
     val categories = arrayListOf<Category>()
     config?.let {
         if (it is OtterResourceContainerConfig) {
