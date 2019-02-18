@@ -7,17 +7,18 @@ import org.wycliffeassociates.otter.common.data.model.Content
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.ImportResult
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.toCollection
-import org.wycliffeassociates.resourcecontainer.DirResourceContainer
+import org.wycliffeassociates.resourcecontainer.ResourceContainer
 import org.wycliffeassociates.resourcecontainer.entity.Project
 import java.io.File
 import java.io.IOException
 
 class UsfmProjectReader: IProjectReader {
     override fun constructProjectTree(
-            container: DirResourceContainer, project: Project
+            container: ResourceContainer, project: Project
     ): Pair<ImportResult, Tree> {
         var result = ImportResult.SUCCESS
-        val projectLocation = container.dir.resolve(project.path)
+        // TODO: Logic for projectLocation does not apply to zip
+        val projectLocation = container.file.resolve(project.path)
         val projectTree = Tree(project.toCollection())
         if (projectLocation.isDirectory) {
             val files = projectLocation.listFiles()
@@ -27,6 +28,7 @@ class UsfmProjectReader: IProjectReader {
             }
         } else {
             // Single file
+            // TODO: Handle zip file (?) For usfm, it was working well enough without it
             result = parseFileIntoProjectTree(projectLocation, projectTree, project.identifier)
             if (result != ImportResult.SUCCESS) return Pair(result, Tree(Unit))
         }

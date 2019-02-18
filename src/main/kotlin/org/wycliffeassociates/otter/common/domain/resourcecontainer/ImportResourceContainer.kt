@@ -65,7 +65,7 @@ class ImportResourceContainer(
 
         ////////////////////////////////////////////////////
 
-        val (constructResult, tree) = constructContainerTree(container as DirResourceContainer)
+        val (constructResult, tree) = constructContainerTree(container)
         if (constructResult != ImportResult.SUCCESS) return cleanUp(internalDir, constructResult)
 
         return resourceContainerRepository
@@ -89,14 +89,15 @@ class ImportResourceContainer(
                             return@flatMap Single.just(ImportResult.LOAD_RC_ERROR)
                         }
                         val internalDir = directoryProvider.getSourceContainerDirectory(extContainer)
-                        if (internalDir.exists() && internalDir.listFiles().isNotEmpty()) {
-                            // Collision on disk: Can't import the resource container
-                            // Assumes that filesystem internal app directory and database are in sync
-                            return@flatMap Single.just(ImportResult.ALREADY_EXISTS)
-                        }
-
-                        // Copy to the internal directory
-                        val newDirectory = copyRecursivelyToInternalDirectory(containerDir, internalDir)
+//                        if (internalDir.exists() && internalDir.listFiles().isNotEmpty()) {
+//                            // Collision on disk: Can't import the resource container
+//                            // Assumes that filesystem internal app directory and database are in sync
+//                            return@flatMap Single.just(ImportResult.ALREADY_EXISTS)
+//                        }
+//
+//                        // Copy to the internal directory
+//                        val newDirectory = copyRecursivelyToInternalDirectory(containerDir, internalDir)
+                        val newDirectory = internalDir
 
                         // Load the internal container
                         val container = try {
@@ -154,7 +155,7 @@ class ImportResourceContainer(
         return ImportResult.SUCCESS
     }
 
-    private fun constructContainerTree(container: DirResourceContainer): Pair<ImportResult, Tree> {
+    private fun constructContainerTree(container: ResourceContainer): Pair<ImportResult, Tree> {
         val projectReader = IProjectReader.build(container.manifest.dublinCore.format)
                 ?: return Pair(ImportResult.UNSUPPORTED_CONTENT, Tree(Unit))
         val root = Tree(container.toCollection())
