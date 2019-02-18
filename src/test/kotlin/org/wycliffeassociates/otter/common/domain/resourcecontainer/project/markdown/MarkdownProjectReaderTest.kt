@@ -25,6 +25,21 @@ class MarkdownProjectReaderTest {
     }
 
     @Test
+    fun testMatchesEverything() {
+        val regex = Regex(".*")
+        val test = "1ch/29/23.md"
+        TestCase.assertTrue(regex.matches(test))
+    }
+
+    @Test
+    fun testSplit() {
+        val regex = Regex("1ch/")
+        val test = "1ch/29/23.md"
+        val parts = regex.split(test)
+        TestCase.assertTrue(parts[1] == "29/23.md")
+    }
+
+    @Test
     fun testBuilderMarkdown() {
         val reader = IProjectReader.build("text/markdown")
         TestCase.assertTrue(reader is MarkdownProjectReader)

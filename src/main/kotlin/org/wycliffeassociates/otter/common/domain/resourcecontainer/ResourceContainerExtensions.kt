@@ -2,21 +2,21 @@ package org.wycliffeassociates.otter.common.domain.resourcecontainer
 
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.usfm.ParseUsfm
-import org.wycliffeassociates.resourcecontainer.DirResourceContainer
+import org.wycliffeassociates.resourcecontainer.ResourceContainer
 import org.wycliffeassociates.resourcecontainer.entity.Project
 import java.io.File
 
-fun DirResourceContainer.expandUSFMBundle(): Boolean {
+fun ResourceContainer.expandUSFMBundle(): Boolean {
     manifest.dublinCore.type = "book"
     for (project in manifest.projects) {
-        val result = project.expandUSFMProject(dir)
+        val result = project.expandUSFMProject(file)
         if (!result) return result
     }
     writeManifest()
     return true
 }
 
-fun DirResourceContainer.toCollection(): Collection {
+fun ResourceContainer.toCollection(): Collection {
     return Collection(
             0,
             manifest.dublinCore.identifier,
@@ -26,7 +26,7 @@ fun DirResourceContainer.toCollection(): Collection {
     )
 }
 
-fun DirResourceContainer.otterConfigCategories(): List<Category> {
+fun ResourceContainer.otterConfigCategories(): List<Category> {
     val categories = arrayListOf<Category>()
     config?.let {
         if (it is OtterResourceContainerConfig) {
@@ -38,6 +38,7 @@ fun DirResourceContainer.otterConfigCategories(): List<Category> {
     return categories
 }
 
+// TODO: Does this work now?
 fun Project.expandUSFMProject(root: File): Boolean {
     var result = true
     val usfmFile = root.resolve(path)
