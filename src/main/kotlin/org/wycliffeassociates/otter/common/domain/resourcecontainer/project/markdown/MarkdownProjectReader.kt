@@ -27,6 +27,7 @@ class MarkdownProjectReader() : IProjectReader {
         // TODO: Logic for projectRoot does not apply to zip
         val projectRoot = container.file.resolve(project.path)
         val collectionKey = container.manifest.dublinCore.identifier
+
         return projectRoot
                 // TODO: Change to buildZipEntryTree
                 .buildFileTree()
@@ -38,16 +39,18 @@ class MarkdownProjectReader() : IProjectReader {
     }
 
     private fun fileToId(f: OtterFile): Int =
-            f.nameWithoutExtension().toIntOrNull() ?: 0
+            f.nameWithoutExtension.toIntOrNull() ?: 0
 
     private fun fileToSlug(f: OtterFile, root: OtterFile): String =
-            f.toRelativeString(root.parentFile())
-                    .split('/', '\\')
-                    .map { it.toIntOrNull()?.toString() ?: it }
-                    .joinToString("_")
+            root.parentFile?.let { parentFile ->
+                f.toRelativeString(parentFile)
+                        .split('/', '\\')
+                        .map { it.toIntOrNull()?.toString() ?: it }
+                        .joinToString("_")
+            } ?: throw Exception("asdjfkl") // TODO. Also we could move this exception somewhere else if we set parentFile to a val
 
     private fun bufferedReaderProvider(f: OtterFile): (() -> BufferedReader)? =
-            if (f.isFile()) {
+            if (f.isFile) {
                 { f.bufferedReader() }
             } else null
 
@@ -94,8 +97,7 @@ class MarkdownProjectReader() : IProjectReader {
         }
     }
 
-//    data class StackNode(val pathRegex: Regex, val node: OtterTree<Any>)
-
+    // TODO: Move this into ZipResourceContainer which is where we should really be building the zip filesystem
     private fun buildZeTree(zipFile: ZipFile) {
 
         val list = zipFile.entries().toList()
@@ -104,8 +106,6 @@ class MarkdownProjectReader() : IProjectReader {
         val rootCollection = Collection(0, "en_tn", "tn", "0", null)
         //TODO: Any or either?
         val root = OtterTree<Any>(rootCollection)
-
-//        val stack = ArrayDeque<StackNode>()
 
         val stack = ArrayDeque<Pair<Regex, OtterTree<Any>>>()
         stack.push(Pair(Regex(".*"), root)) // Create root node that matches everything
@@ -159,7 +159,7 @@ internal fun File.buildFileTree(): OtterTree<OtterFile> {
 }
 
 private fun OtterTree<OtterFile>.filterMarkdownFiles(): OtterTree<OtterFile>? =
-        this.filterPreserveParents { it.isFile() && extensions.matches(it.name()) }
+        this.filterPreserveParents { it.isFile && extensions.matches(it.name) }
 
 private fun Tree.flattenContent(): Tree =
         Tree(this.value).also {
