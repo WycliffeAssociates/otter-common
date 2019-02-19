@@ -4,6 +4,7 @@ import io.reactivex.Single
 import io.reactivex.schedulers.Schedulers
 import org.wycliffeassociates.otter.common.collections.tree.Tree
 import org.wycliffeassociates.otter.common.data.model.Collection
+import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IZipEntryTreeBuilder
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
 import org.wycliffeassociates.otter.common.persistence.repositories.IResourceContainerRepository
@@ -15,7 +16,8 @@ import java.util.zip.ZipFile
 
 class ImportResourceContainer(
         private val resourceContainerRepository: IResourceContainerRepository,
-        private val directoryProvider: IDirectoryProvider
+        private val directoryProvider: IDirectoryProvider,
+        private val zipEntryTreeBuilder: IZipEntryTreeBuilder
 ) {
     fun import(file: File): Single<ImportResult> {
         return when {
@@ -54,16 +56,14 @@ class ImportResourceContainer(
         }
 
         // Copy to the internal directory
-        val newZipFilepath = copyFileToInternalDirectory(file, internalDir)
+        val newZipFile = copyFileToInternalDirectory(file, internalDir)
 
         // Load the internal container
         val container = try {
-            ResourceContainer.load(newZipFilepath, OtterResourceContainerConfig())
+            ResourceContainer.load(newZipFile, OtterResourceContainerConfig())
         } catch (e: Exception) {
             return cleanUp(internalDir, ImportResult.LOAD_RC_ERROR)
         }
-
-        ////////////////////////////////////////////////////
 
         val (constructResult, tree) = constructContainerTree(container)
         if (constructResult != ImportResult.SUCCESS) return cleanUp(internalDir, constructResult)
@@ -89,15 +89,14 @@ class ImportResourceContainer(
                             return@flatMap Single.just(ImportResult.LOAD_RC_ERROR)
                         }
                         val internalDir = directoryProvider.getSourceContainerDirectory(extContainer)
-//                        if (internalDir.exists() && internalDir.listFiles().isNotEmpty()) {
-//                            // Collision on disk: Can't import the resource container
-//                            // Assumes that filesystem internal app directory and database are in sync
-//                            return@flatMap Single.just(ImportResult.ALREADY_EXISTS)
-//                        }
-//
-//                        // Copy to the internal directory
-//                        val newDirectory = copyRecursivelyToInternalDirectory(containerDir, internalDir)
-                        val newDirectory = internalDir
+                        if (internalDir.exists() && internalDir.listFiles().isNotEmpty()) {
+                            // Collision on disk: Can't import the resource container
+                            // Assumes that filesystem internal app directory and database are in sync
+                            return@flatMap Single.just(ImportResult.ALREADY_EXISTS)
+                        }
+
+                        // Copy to the internal directory
+                        val newDirectory = copyRecursivelyToInternalDirectory(containerDir, internalDir)
 
                         // Load the internal container
                         val container = try {
@@ -179,7 +178,7 @@ class ImportResourceContainer(
                     categoryNode
                 }
             }
-            val projectResult = projectReader.constructProjectTree(container, project)
+            val projectResult = projectReader.constructProjectTree(container, project, zipEntryTreeBuilder)
             if (projectResult.first == ImportResult.SUCCESS) {
                 parent.addChild(projectResult.second)
             } else {

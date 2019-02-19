@@ -5,6 +5,7 @@ import org.wycliffeassociates.otter.common.collections.tree.TreeNode
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Content
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.ImportResult
+import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IZipEntryTreeBuilder
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.toCollection
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
@@ -14,7 +15,9 @@ import java.io.IOException
 
 class UsfmProjectReader: IProjectReader {
     override fun constructProjectTree(
-            container: ResourceContainer, project: Project
+            container: ResourceContainer,
+            project: Project,
+            zipEntryTreeBuilder: IZipEntryTreeBuilder
     ): Pair<ImportResult, Tree> {
         var result = ImportResult.SUCCESS
         // TODO: Logic for projectLocation does not apply to zip

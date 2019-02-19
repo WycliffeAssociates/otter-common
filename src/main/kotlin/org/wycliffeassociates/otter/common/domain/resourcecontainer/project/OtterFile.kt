@@ -7,6 +7,12 @@ sealed class OtterFile {
     class F(val f: File) : OtterFile()
     class Z(val z: OtterZipFile) : OtterFile()
 
+    companion object {
+         fun otterFileF(f: File): OtterFile {
+            return OtterFile.F(f)
+        }
+    }
+
     val nameWithoutExtension: String
         get() = when (this) {
             is F -> f.nameWithoutExtension
@@ -22,7 +28,7 @@ sealed class OtterFile {
     val parentFile: OtterFile?
         get() = when (this) {
             is F -> OtterFile.F(f.parentFile)
-            is Z -> z.parentFile?.let { OtterFile.Z(it) }
+            is Z -> z.parentFile
         }
 
     val name: String
