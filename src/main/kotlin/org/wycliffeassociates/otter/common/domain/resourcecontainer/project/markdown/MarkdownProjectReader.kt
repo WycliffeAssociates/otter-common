@@ -29,17 +29,19 @@ class MarkdownProjectReader() : IProjectReader {
             zipEntryTreeBuilder: IZipEntryTreeBuilder
     ): Pair<ImportResult, Tree> {
 
-        val projectRoot = when (container) {
-            // TODO: Maybe instead of otterFileF this can just be File
-            is DirResourceContainer -> otterFileF(container.file.resolve(project.path))
-            is ZipResourceContainer -> otterFileF(container.file.toPath().resolve(project.path).toFile())
-            else -> throw Exception("asdjfkl") // TODO
-        }
+        val projectRoot: OtterFile
+        val projectTreeRoot: OtterTree<OtterFile>
 
-        val projectTreeRoot = when (container) {
-            is DirResourceContainer -> container.file.resolve(project.path).buildFileTree()
-            is ZipResourceContainer -> zipEntryTreeBuilder.buildOtterFileTree(container.zip, project.path)
-            else -> throw Exception("asdjfkl") // TODO
+        when (container) {
+            is DirResourceContainer -> {
+                projectRoot = otterFileF(container.file.resolve(project.path))
+                projectTreeRoot = container.file.resolve(project.path).buildFileTree()
+            }
+            is ZipResourceContainer -> {
+                projectRoot = otterFileF(container.file.toPath().resolve(project.path).toFile())
+                projectTreeRoot = zipEntryTreeBuilder.buildOtterFileTree(container.zip, project.path)
+            }
+            else -> return Pair(ImportResult.LOAD_RC_ERROR, Tree(""))
         }
 
         val collectionKey = container.manifest.dublinCore.identifier
@@ -61,8 +63,7 @@ class MarkdownProjectReader() : IProjectReader {
                         .split('/', '\\')
                         .map { it.toIntOrNull()?.toString() ?: it }
                         .joinToString("_")
-            }
-                    ?: throw Exception("asdjfkl") // TODO. Also we could move this exception somewhere else if we set parentFile to a val
+            } ?: throw Exception("fileToSlug() call should not be made with null parentFile") // TODO. Also we could move this exception somewhere else if we set parentFile to a val
 
     private fun bufferedReaderProvider(f: OtterFile): (() -> BufferedReader)? =
             if (f.isFile) {
