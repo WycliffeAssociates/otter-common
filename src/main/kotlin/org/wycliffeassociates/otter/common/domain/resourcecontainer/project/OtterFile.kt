@@ -13,6 +13,19 @@ sealed class OtterFile {
         }
     }
 
+    override fun equals(other: Any?): Boolean {
+        return when (other) {
+            is OtterFile -> backingFile == other.backingFile
+            else -> false
+        }
+    }
+
+    private val backingFile: Any
+        get() = when (this) {
+            is F -> f
+            is Z -> z
+        }
+
     val nameWithoutExtension: String
         get() = when (this) {
             is F -> f.nameWithoutExtension

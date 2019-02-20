@@ -7,16 +7,24 @@ import java.util.zip.ZipFile
 class OtterZipFile(
         val absolutePath: String,
         private val rootZipFile: ZipFile,
-        separator: String,
+        private val separator: String,
         val parentFile: OtterFile? = null,
         private val zipEntry: ZipEntry? = null
 ) {
     val isFile = zipEntry != null
-    val nameWithoutExtension = absolutePath.split(separator, ".").dropLast(1).last() // TODO: Unit test or take the name between a possible slash and the last period
-    val name: String = absolutePath.substring(absolutePath.lastIndexOf(separator) + 1) // TODO: Unit test. We aren't using prefix length
+    val name= absolutePath.removeSuffix(separator).let {
+        it.substring(it.lastIndexOf(separator) + 1)
+    }
+    val nameWithoutExtension = Regex("\\..*$").find(name)?.value?.let {
+        name.removeSuffix(it)
+    } ?: name
 
     fun bufferedReader(): BufferedReader = rootZipFile.getInputStream(zipEntry).bufferedReader()
-    fun toRelativeString(parent: OtterFile): String = absolutePath.substringAfter(parent.absolutePath) // TODO: Unit test
+    fun toRelativeString(parent: OtterFile): String = absolutePath
+            .substringAfter(parent.absolutePath)
+            .removePrefix(".")
+            .removePrefix(separator)
+            .removeSuffix(separator)
 
     companion object {
         fun otterFileZ(
