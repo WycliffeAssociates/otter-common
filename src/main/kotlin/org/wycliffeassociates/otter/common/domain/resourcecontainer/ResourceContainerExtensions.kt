@@ -48,7 +48,7 @@ fun Project.expandUSFMProject(root: File): Boolean {
         projectDir.mkdirs()
         try {
             // Parse the USFM
-            val book = ParseUsfm(usfmFile).parse()
+            val book = ParseUsfm(usfmFile.bufferedReader()).parse()
 
             val chapterPadding = book.chapters.size.toString().length // length of the string version of the number of chapters
             for (chapter in book.chapters.entries) {

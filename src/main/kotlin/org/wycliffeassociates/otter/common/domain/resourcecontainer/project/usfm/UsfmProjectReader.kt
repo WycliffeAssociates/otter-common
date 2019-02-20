@@ -8,21 +8,30 @@ import org.wycliffeassociates.otter.common.domain.resourcecontainer.ImportResult
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IZipEntryTreeBuilder
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.toCollection
+import org.wycliffeassociates.resourcecontainer.DirResourceContainer
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
+import org.wycliffeassociates.resourcecontainer.ZipResourceContainer
 import org.wycliffeassociates.resourcecontainer.entity.Project
+import java.io.BufferedReader
 import java.io.File
-import java.io.IOException
 
-class UsfmProjectReader: IProjectReader {
+class UsfmProjectReader : IProjectReader {
     override fun constructProjectTree(
             container: ResourceContainer,
             project: Project,
             zipEntryTreeBuilder: IZipEntryTreeBuilder
     ): Pair<ImportResult, Tree> {
-        var result = ImportResult.SUCCESS
-        // TODO: Logic for projectLocation does not apply to zip
-        val projectLocation = container.file.resolve(project.path)
+        return when (container) {
+            is DirResourceContainer -> constructTreeFromDirOrFile(container, project)
+            is ZipResourceContainer -> constructTreeFromZip(container, project)
+            else -> Pair(ImportResult.LOAD_RC_ERROR, Tree(Unit))
+        }
+    }
+    private fun constructTreeFromDirOrFile(container: DirResourceContainer, project: Project): Pair<ImportResult, Tree> {
+        var result: ImportResult = ImportResult.SUCCESS
         val projectTree = Tree(project.toCollection())
+
+        val projectLocation = container.file.resolve(project.path)
         if (projectLocation.isDirectory) {
             val files = projectLocation.listFiles()
             for (file in files) {
@@ -31,23 +40,39 @@ class UsfmProjectReader: IProjectReader {
             }
         } else {
             // Single file
-            // TODO: Handle zip file (?) For usfm, it was working well enough without it
             result = parseFileIntoProjectTree(projectLocation, projectTree, project.identifier)
             if (result != ImportResult.SUCCESS) return Pair(result, Tree(Unit))
         }
         return Pair(result, projectTree)
     }
 
+    private fun constructTreeFromZip(container: ZipResourceContainer, project: Project): Pair<ImportResult, Tree> {
+        // Find the appropriate zip entry and use it to construct the project tree
+        container.zip.entries().toList().filter {
+            project.path.contains(it.name)
+        }.firstOrNull()?.let {
+            return when (it.name.contains(".usfm", ignoreCase = true)) {
+                true -> {
+                    val projectTree = Tree(project.toCollection())
+                    val result = parseFromBufferedReader(
+                            container.zip.getInputStream(it).bufferedReader(),
+                            projectTree,
+                            project.identifier
+                    )
+                    return when (result) {
+                        ImportResult.SUCCESS -> Pair(result, projectTree)
+                        else -> Pair(result, Tree(Unit))
+                    }
+                }
+                false -> Pair(ImportResult.UNSUPPORTED_CONTENT, Tree(Unit))
+            }
+        } ?: return Pair(ImportResult.LOAD_RC_ERROR, Tree(Unit))
+    }
+
     private fun parseFileIntoProjectTree(file: File, root: Tree, projectIdentifier: String): ImportResult {
         return when (file.extension) {
             "usfm", "USFM" -> {
-                try {
-                    val chapters = parseUSFMToChapterTrees(file, projectIdentifier)
-                    root.addAll(chapters)
-                    ImportResult.SUCCESS
-                } catch (e: RuntimeException) {
-                    ImportResult.INVALID_CONTENT
-                }
+                parseFromBufferedReader(file.bufferedReader(), root, projectIdentifier)
             }
             else -> {
                 ImportResult.UNSUPPORTED_CONTENT
@@ -55,12 +80,18 @@ class UsfmProjectReader: IProjectReader {
         }
     }
 
-    private fun parseUSFMToChapterTrees(usfmFile: File, projectSlug: String): List<Tree> {
-        if (usfmFile.extension != "usfm") {
-            throw IOException("Not a USFM file")
+    private fun parseFromBufferedReader(bufferedReader: BufferedReader, root: Tree, projectIdentifier: String): ImportResult {
+        return try {
+            val chapters = parseUSFMToChapterTrees(bufferedReader, projectIdentifier)
+            root.addAll(chapters)
+            ImportResult.SUCCESS
+        } catch (e: RuntimeException) {
+            ImportResult.INVALID_CONTENT
         }
+    }
 
-        val doc = ParseUsfm(usfmFile).parse()
+    private fun parseUSFMToChapterTrees(bufferedReader: BufferedReader, projectSlug: String): List<Tree> {
+        val doc = ParseUsfm(bufferedReader).parse()
         return doc.chapters.map { chapter ->
             val chapterSlug = "${projectSlug}_${chapter.key}"
             val chapterCollection = Collection(
