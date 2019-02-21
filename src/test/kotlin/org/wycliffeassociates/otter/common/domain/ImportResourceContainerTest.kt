@@ -114,7 +114,7 @@ class MockCollectionRepository: ICollectionRepository {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun getBySlugAndContainer(slug: String, container: ResourceMetadata): Maybe<Collection?> {
+    override fun getBySlugAndContainer(slug: String, container: ResourceMetadata): Maybe<Collection> {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
