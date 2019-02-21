@@ -39,16 +39,8 @@ class ImportResourceContainer(
         zip.getEntry("manifest.yaml")
                 ?: return Single.just(ImportResult.LOAD_RC_ERROR)
 
-        // Load the external container to get the metadata we need to figure out where to copy to
-        val extContainer = try {
-            ResourceContainer.load(file, OtterResourceContainerConfig())
-        } catch (e: Exception) {
-            // Could be checked or unchecked exception from RC library
+        val internalDir = getInternalDirectory(file) ?:
             return Single.just(ImportResult.LOAD_RC_ERROR)
-        }
-
-        val internalDir = directoryProvider.getSourceContainerDirectory(extContainer)
-
         if (internalDir.exists() && internalDir.contains(file.name)) {
             // Collision on disk: Can't import the resource container
             // Assumes that filesystem internal app directory and database are in sync
@@ -58,20 +50,7 @@ class ImportResourceContainer(
         // Copy to the internal directory
         val newZipFile = copyFileToInternalDirectory(file, internalDir)
 
-        // Load the internal container
-        val container = try {
-            ResourceContainer.load(newZipFile, OtterResourceContainerConfig())
-        } catch (e: Exception) {
-            return cleanUp(internalDir, ImportResult.LOAD_RC_ERROR)
-        }
-
-        val (constructResult, tree) = constructContainerTree(container)
-        if (constructResult != ImportResult.SUCCESS) return cleanUp(internalDir, constructResult)
-
-        return resourceContainerRepository
-                .importResourceContainer(container, tree, container.manifest.dublinCore.language.identifier)
-                .toSingle { ImportResult.SUCCESS }
-                .doOnError { internalDir.deleteRecursively() }
+        return importFromInternalDir(newZipFile, internalDir)
     }
 
     private fun importContainerDirectory(directory: File) =
@@ -81,14 +60,8 @@ class ImportResourceContainer(
                         // Is this a valid resource container
                         if (!validateResourceContainer(containerDir)) return@flatMap Single.just(ImportResult.INVALID_RC)
 
-                        // Load the external container to get the metadata we need to figure out where to copy to
-                        val extContainer = try {
-                            ResourceContainer.load(containerDir, OtterResourceContainerConfig())
-                        } catch (e: Exception) {
-                            // Could be checked or unchecked exception from RC library
+                        val internalDir = getInternalDirectory(containerDir) ?:
                             return@flatMap Single.just(ImportResult.LOAD_RC_ERROR)
-                        }
-                        val internalDir = directoryProvider.getSourceContainerDirectory(extContainer)
                         if (internalDir.exists() && internalDir.listFiles().isNotEmpty()) {
                             // Collision on disk: Can't import the resource container
                             // Assumes that filesystem internal app directory and database are in sync
@@ -98,22 +71,39 @@ class ImportResourceContainer(
                         // Copy to the internal directory
                         val newDirectory = copyRecursivelyToInternalDirectory(containerDir, internalDir)
 
-                        // Load the internal container
-                        val container = try {
-                            ResourceContainer.load(newDirectory, OtterResourceContainerConfig())
-                        } catch (e: Exception) {
-                            return@flatMap cleanUp(newDirectory, ImportResult.LOAD_RC_ERROR)
-                        }
-
-                        val (constructResult, tree) = constructContainerTree(container as DirResourceContainer)
-                        if (constructResult != ImportResult.SUCCESS) return@flatMap cleanUp(newDirectory, constructResult)
-
-                        return@flatMap resourceContainerRepository
-                                .importResourceContainer(container, tree, container.manifest.dublinCore.language.identifier)
-                                .toSingle { ImportResult.SUCCESS }
-                                .doOnError { newDirectory.deleteRecursively() }
+                        return@flatMap importFromInternalDir(newDirectory, newDirectory)
                     }
                     .subscribeOn(Schedulers.io())
+
+    private fun getInternalDirectory(file: File): File? {
+
+        // Load the external container to get the metadata we need to figure out where to copy to
+        val extContainer = try {
+            ResourceContainer.load(file, OtterResourceContainerConfig())
+        } catch (e: Exception) {
+            // Could be checked or unchecked exception from RC library
+            return null
+        }
+        return directoryProvider.getSourceContainerDirectory(extContainer)
+    }
+
+    private fun importFromInternalDir(fileToLoad: File, newDir: File): Single<ImportResult> {
+
+        // Load the internal container
+        val container = try {
+            ResourceContainer.load(fileToLoad, OtterResourceContainerConfig())
+        } catch (e: Exception) {
+            return cleanUp(newDir, ImportResult.LOAD_RC_ERROR)
+        }
+
+        val (constructResult, tree) = constructContainerTree(container)
+        if (constructResult != ImportResult.SUCCESS) return cleanUp(newDir, constructResult)
+
+        return resourceContainerRepository
+                .importResourceContainer(container, tree, container.manifest.dublinCore.language.identifier)
+                .toSingle { ImportResult.SUCCESS }
+                .doOnError { newDir.deleteRecursively() }
+    }
 
     private fun cleanUp(containerDir: File, result: ImportResult): Single<ImportResult> = Single.fromCallable {
         containerDir.deleteRecursively()
