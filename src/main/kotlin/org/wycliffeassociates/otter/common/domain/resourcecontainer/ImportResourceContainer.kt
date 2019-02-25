@@ -57,8 +57,8 @@ class ImportResourceContainer(
                         // Is this a valid resource container
                         if (!validateResourceContainer(containerDir)) return@flatMap Single.just(ImportResult.INVALID_RC)
 
-                        val internalDir = getInternalDirectory(containerDir) ?:
-                            return@flatMap Single.just(ImportResult.LOAD_RC_ERROR)
+                        val internalDir = getInternalDirectory(containerDir)
+                                ?: return@flatMap Single.just(ImportResult.LOAD_RC_ERROR)
                         if (internalDir.exists() && internalDir.listFiles().isNotEmpty()) {
                             // Collision on disk: Can't import the resource container
                             // Assumes that filesystem internal app directory and database are in sync
@@ -73,7 +73,6 @@ class ImportResourceContainer(
                     .subscribeOn(Schedulers.io())
 
     private fun getInternalDirectory(file: File): File? {
-
         // Load the external container to get the metadata we need to figure out where to copy to
         val extContainer = try {
             ResourceContainer.load(file, OtterResourceContainerConfig())
@@ -86,7 +85,6 @@ class ImportResourceContainer(
     }
 
     private fun importFromInternalDir(fileToLoad: File, newDir: File): Single<ImportResult> {
-
         // Load the internal container
         val container = try {
             ResourceContainer.load(fileToLoad, OtterResourceContainerConfig())
@@ -99,8 +97,10 @@ class ImportResourceContainer(
 
         return resourceContainerRepository
                 .importResourceContainer(container, tree, container.manifest.dublinCore.language.identifier)
-                .toSingle { ImportResult.SUCCESS }
-                .doOnError { newDir.deleteRecursively() }
+                .doOnEvent { result, err ->
+                    if (result != ImportResult.SUCCESS || err != null) newDir.deleteRecursively()
+                }
+                .subscribeOn(Schedulers.io())
     }
 
     private fun cleanUp(containerDir: File, result: ImportResult): Single<ImportResult> = Single.fromCallable {
