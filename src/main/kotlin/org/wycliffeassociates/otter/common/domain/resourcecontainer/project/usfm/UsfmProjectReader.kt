@@ -8,12 +8,12 @@ import org.wycliffeassociates.otter.common.domain.resourcecontainer.ImportResult
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IZipEntryTreeBuilder
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.toCollection
-import org.wycliffeassociates.resourcecontainer.DirResourceContainer
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
-import org.wycliffeassociates.resourcecontainer.ZipResourceContainer
 import org.wycliffeassociates.resourcecontainer.entity.Project
 import java.io.BufferedReader
 import java.io.File
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
 
 class UsfmProjectReader : IProjectReader {
     override fun constructProjectTree(
@@ -21,13 +21,14 @@ class UsfmProjectReader : IProjectReader {
             project: Project,
             zipEntryTreeBuilder: IZipEntryTreeBuilder
     ): Pair<ImportResult, Tree> {
-        return when (container) {
-            is DirResourceContainer -> constructTreeFromDirOrFile(container, project)
-            is ZipResourceContainer -> constructTreeFromZip(container, project)
+        // TODO 2/25/19
+        return when (container.file.endsWith("zip")) {
+            false -> constructTreeFromDirOrFile(container, project)
+            true -> constructTreeFromZip(container, project)
             else -> Pair(ImportResult.LOAD_RC_ERROR, Tree(Unit))
         }
     }
-    private fun constructTreeFromDirOrFile(container: DirResourceContainer, project: Project): Pair<ImportResult, Tree> {
+    private fun constructTreeFromDirOrFile(container: ResourceContainer, project: Project): Pair<ImportResult, Tree> {
         var result: ImportResult = ImportResult.SUCCESS
         val projectTree = Tree(project.toCollection())
 
@@ -46,16 +47,17 @@ class UsfmProjectReader : IProjectReader {
         return Pair(result, projectTree)
     }
 
-    private fun constructTreeFromZip(container: ZipResourceContainer, project: Project): Pair<ImportResult, Tree> {
+    private fun constructTreeFromZip(container: ResourceContainer, project: Project): Pair<ImportResult, Tree> {
         // Find the appropriate zip entry and use it to construct the project tree
-        container.zip.entries().toList().filter {
+        val zip = ZipFile(container.file) // TODO: 2/25/19
+        zip.entries().toList().filter {
             project.path.contains(it.name)
         }.firstOrNull()?.let {
             return when (it.name.contains(".usfm", ignoreCase = true)) {
                 true -> {
                     val projectTree = Tree(project.toCollection())
                     val result = parseFromBufferedReader(
-                            container.zip.getInputStream(it).bufferedReader(),
+                            zip.getInputStream(it).bufferedReader(),
                             projectTree,
                             project.identifier
                     )

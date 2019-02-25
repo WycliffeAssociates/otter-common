@@ -9,15 +9,14 @@ import org.wycliffeassociates.otter.common.domain.resourcecontainer.ImportResult
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IZipEntryTreeBuilder
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.OtterFile
-import org.wycliffeassociates.resourcecontainer.DirResourceContainer
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
-import org.wycliffeassociates.resourcecontainer.ZipResourceContainer
 import org.wycliffeassociates.resourcecontainer.entity.Project
 import java.io.BufferedReader
 import org.wycliffeassociates.otter.common.collections.tree.OtterTreeNode
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.OtterFile.Companion.otterFileF
 import java.io.File
 import java.util.ArrayDeque
+import java.util.zip.ZipFile
 
 private const val FORMAT = "text/markdown"
 private val extensions = Regex(".+\\.(md|mkdn?|mdown|markdown)$", RegexOption.IGNORE_CASE)
@@ -32,14 +31,15 @@ class MarkdownProjectReader() : IProjectReader {
         val projectRoot: OtterFile
         val projectTreeRoot: OtterTree<OtterFile>
 
-        when (container) {
-            is DirResourceContainer -> {
+        // TODO: 2/25/19
+        when (container.file.endsWith("zip")) {
+            false -> {
                 projectRoot = otterFileF(container.file.resolve(project.path))
                 projectTreeRoot = container.file.resolve(project.path).buildFileTree()
             }
-            is ZipResourceContainer -> {
+            true -> {
                 projectRoot = otterFileF(container.file.toPath().resolve(project.path).toFile())
-                projectTreeRoot = zipEntryTreeBuilder.buildOtterFileTree(container.zip, project.path)
+                projectTreeRoot = zipEntryTreeBuilder.buildOtterFileTree(ZipFile(container.file), project.path)
             }
             else -> return Pair(ImportResult.LOAD_RC_ERROR, Tree(""))
         }

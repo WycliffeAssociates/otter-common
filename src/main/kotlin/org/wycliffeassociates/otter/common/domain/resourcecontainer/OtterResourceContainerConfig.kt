@@ -6,44 +6,33 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import org.wycliffeassociates.resourcecontainer.Config
-import java.io.File
-import java.io.IOException
-import java.util.zip.ZipEntry
-import java.util.zip.ZipFile
+import java.io.BufferedReader
+import java.io.BufferedWriter
 
 class OtterResourceContainerConfig : Config {
     var config: OtterConfig? = null
     var extendedDublinCore: ExtendedDublinCore? = null
 
-    override fun readFromZip(zip: ZipFile, zipEntry: ZipEntry): Config {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun read(configFile: File): Config {
-        if (configFile.exists()) {
-            val mapper = ObjectMapper(YAMLFactory())
-            mapper.registerModule(KotlinModule())
-            config = configFile.bufferedReader().use {
-                mapper.readValue(it, OtterConfig::class.java)
-            }
-            config?.let {
-                extendedDublinCore = it.extendedDublinCore
-            }
-            return this
-        } else {
-            throw IOException("Missing config.yaml")
+    override fun read(br: BufferedReader): Config {
+        val mapper = ObjectMapper(YAMLFactory())
+        mapper.registerModule(KotlinModule())
+        config = br.use {
+            mapper.readValue(it, OtterConfig::class.java)
         }
+        config?.let {
+            extendedDublinCore = it.extendedDublinCore
+        }
+        return this
     }
 
-    override fun write(configFile: File) {
+    override fun write(bw: BufferedWriter) {
         val mapper = ObjectMapper(YAMLFactory())
         mapper.registerModule(KotlinModule())
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL)
-        configFile.bufferedWriter().use {
+        bw.use {
             mapper.writeValue(it, config)
         }
     }
-
 }
 
 class OtterConfig (

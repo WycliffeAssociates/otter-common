@@ -8,7 +8,6 @@ import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IZip
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
 import org.wycliffeassociates.otter.common.persistence.repositories.IResourceContainerRepository
-import org.wycliffeassociates.resourcecontainer.DirResourceContainer
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
 import java.io.File
 import java.io.IOException
@@ -136,7 +135,7 @@ class ImportResourceContainer(
         return destinationDirectory
     }
 
-    private fun makeExpandedContainer(container: DirResourceContainer): ImportResult {
+    private fun makeExpandedContainer(container: ResourceContainer): ImportResult {
         val dublinCore = container.manifest.dublinCore
         if (dublinCore.type == "bundle" && dublinCore.format.startsWith("text/usfm")) {
             return if (container.expandUSFMBundle()) ImportResult.SUCCESS else ImportResult.INVALID_CONTENT
