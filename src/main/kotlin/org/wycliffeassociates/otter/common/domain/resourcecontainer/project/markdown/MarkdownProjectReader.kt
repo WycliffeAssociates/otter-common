@@ -99,24 +99,6 @@ class MarkdownProjectReader() : IProjectReader {
             )
         }
     }
-
-    private fun OtterTree<OtterFile>.filterMarkdownFiles(): OtterTree<OtterFile>? =
-            this.filterPreserveParents { it.isFile && extensions.matches(it.name) }
-
-    private fun Tree.flattenContent(): Tree =
-            Tree(this.value).also {
-                it.addAll(
-                        if (this.children.all { c -> c.value is List<*> }) {
-                            this.children
-                                    .flatMap { c -> c.value as List<*> }
-                                    .filterNotNull()
-                                    .map { TreeNode(it) }
-                        } else {
-                            this.children
-                                    .map { if (it is Tree) it.flattenContent() else it }
-                        }
-                )
-            }
 }
 
 internal fun File.buildFileTree(): OtterTree<OtterFile> {
@@ -136,3 +118,21 @@ internal fun File.buildFileTree(): OtterTree<OtterFile> {
             .forEach { treeCursor.peek()?.addChild(it) }
     return treeRoot ?: OtterTree(otterFileF(this))
 }
+
+private fun OtterTree<OtterFile>.filterMarkdownFiles(): OtterTree<OtterFile>? =
+        this.filterPreserveParents { it.isFile && extensions.matches(it.name) }
+
+private fun Tree.flattenContent(): Tree =
+        Tree(this.value).also {
+            it.addAll(
+                    if (this.children.all { c -> c.value is List<*> }) {
+                        this.children
+                                .flatMap { c -> c.value as List<*> }
+                                .filterNotNull()
+                                .map { TreeNode(it) }
+                    } else {
+                        this.children
+                                .map { if (it is Tree) it.flattenContent() else it }
+                    }
+            )
+        }

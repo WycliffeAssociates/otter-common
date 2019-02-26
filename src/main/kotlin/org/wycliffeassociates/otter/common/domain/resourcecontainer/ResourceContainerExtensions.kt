@@ -38,7 +38,6 @@ fun ResourceContainer.otterConfigCategories(): List<Category> {
     return categories
 }
 
-// TODO: Does this work now?
 fun Project.expandUSFMProject(root: File): Boolean {
     var result = true
     val usfmFile = root.resolve(path)
