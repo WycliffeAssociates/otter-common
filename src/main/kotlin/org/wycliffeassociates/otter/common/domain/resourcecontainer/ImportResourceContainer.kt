@@ -4,8 +4,8 @@ import io.reactivex.Single
 import io.reactivex.schedulers.Schedulers
 import org.wycliffeassociates.otter.common.collections.tree.Tree
 import org.wycliffeassociates.otter.common.data.model.Collection
-import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IZipEntryTreeBuilder
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
+import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IZipEntryTreeBuilder
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
 import org.wycliffeassociates.otter.common.persistence.repositories.IResourceContainerRepository
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
@@ -34,12 +34,10 @@ class ImportResourceContainer(
     }
 
     private fun importContainerZipFile(file: File): Single<ImportResult> {
-        val zip = ZipFile(file)
-        zip.getEntry("manifest.yaml")
-                ?: return Single.just(ImportResult.LOAD_RC_ERROR)
+        if (!ZipFile(file).use(this::validateResourceContainer)) return Single.just(ImportResult.INVALID_RC)
 
-        val internalDir = getInternalDirectory(file) ?:
-            return Single.just(ImportResult.LOAD_RC_ERROR)
+        val internalDir = getInternalDirectory(file)
+                ?: return Single.just(ImportResult.LOAD_RC_ERROR)
         if (internalDir.exists() && internalDir.contains(file.name)) {
             // Collision on disk: Can't import the resource container
             // Assumes that filesystem internal app directory and database are in sync
@@ -110,6 +108,8 @@ class ImportResourceContainer(
     }
 
     private fun validateResourceContainer(dir: File): Boolean = dir.contains("manifest.yaml")
+
+    private fun validateResourceContainer(zip: ZipFile): Boolean = zip.getEntry("manifest.yaml") != null
 
     private fun copyFileToInternalDirectory(filepath: File, destinationDirectory: File): File {
         // Copy the resource container zip file into the correct directory

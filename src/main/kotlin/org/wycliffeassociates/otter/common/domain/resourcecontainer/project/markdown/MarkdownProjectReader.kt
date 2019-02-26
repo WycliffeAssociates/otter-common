@@ -39,9 +39,9 @@ class MarkdownProjectReader() : IProjectReader {
             }
             true -> {
                 projectRoot = otterFileF(container.file.toPath().resolve(project.path).toFile())
-                projectTreeRoot = zipEntryTreeBuilder.buildOtterFileTree(ZipFile(container.file), project.path)
+                projectTreeRoot = ZipFile(container.file).use { zip ->
+                    zipEntryTreeBuilder.buildOtterFileTree(zip, project.path) }
             }
-            else -> return Pair(ImportResult.LOAD_RC_ERROR, Tree(""))
         }
 
         val collectionKey = container.manifest.dublinCore.identifier

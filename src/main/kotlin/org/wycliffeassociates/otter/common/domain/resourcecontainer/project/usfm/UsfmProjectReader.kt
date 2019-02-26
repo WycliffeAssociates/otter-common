@@ -25,7 +25,6 @@ class UsfmProjectReader : IProjectReader {
         return when (container.file.endsWith("zip")) {
             false -> constructTreeFromDirOrFile(container, project)
             true -> constructTreeFromZip(container, project)
-            else -> Pair(ImportResult.LOAD_RC_ERROR, Tree(Unit))
         }
     }
     private fun constructTreeFromDirOrFile(container: ResourceContainer, project: Project): Pair<ImportResult, Tree> {
@@ -49,26 +48,28 @@ class UsfmProjectReader : IProjectReader {
 
     private fun constructTreeFromZip(container: ResourceContainer, project: Project): Pair<ImportResult, Tree> {
         // Find the appropriate zip entry and use it to construct the project tree
-        val zip = ZipFile(container.file) // TODO: 2/25/19
-        zip.entries().toList().filter {
-            project.path.contains(it.name)
-        }.firstOrNull()?.let {
-            return when (it.name.contains(".usfm", ignoreCase = true)) {
-                true -> {
-                    val projectTree = Tree(project.toCollection())
-                    val result = parseFromBufferedReader(
-                            zip.getInputStream(it).bufferedReader(),
-                            projectTree,
-                            project.identifier
-                    )
-                    return when (result) {
-                        ImportResult.SUCCESS -> Pair(result, projectTree)
-                        else -> Pair(result, Tree(Unit))
+        // TODO: 2/25/19
+        ZipFile(container.file).use { zip ->
+            zip.entries().asSequence().firstOrNull {
+                project.path.contains(it.name)
+            }?.let {
+                return when (it.name.endsWith(".usfm", ignoreCase = true)) {
+                    true -> {
+                        val projectTree = Tree(project.toCollection())
+                        val result = parseFromBufferedReader(
+                                zip.getInputStream(it).bufferedReader(),
+                                projectTree,
+                                project.identifier
+                        )
+                        return when (result) {
+                            ImportResult.SUCCESS -> Pair(result, projectTree)
+                            else -> Pair(result, Tree(Unit))
+                        }
                     }
+                    false -> Pair(ImportResult.UNSUPPORTED_CONTENT, Tree(Unit))
                 }
-                false -> Pair(ImportResult.UNSUPPORTED_CONTENT, Tree(Unit))
-            }
-        } ?: return Pair(ImportResult.LOAD_RC_ERROR, Tree(Unit))
+            } ?: return Pair(ImportResult.LOAD_RC_ERROR, Tree(Unit))
+        }
     }
 
     private fun parseFileIntoProjectTree(file: File, root: Tree, projectIdentifier: String): ImportResult {
