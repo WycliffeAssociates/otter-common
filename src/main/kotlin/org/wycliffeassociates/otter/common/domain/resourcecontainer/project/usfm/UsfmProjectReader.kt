@@ -22,9 +22,9 @@ class UsfmProjectReader : IProjectReader {
             zipEntryTreeBuilder: IZipEntryTreeBuilder
     ): Pair<ImportResult, Tree> {
         // TODO 2/25/19
-        return when (container.file.endsWith("zip")) {
-            false -> constructTreeFromDirOrFile(container, project)
-            true -> constructTreeFromZip(container, project)
+        return when (container.file.extension) {
+            "zip" -> constructTreeFromZip(container, project)
+            else -> constructTreeFromDirOrFile(container, project)
         }
     }
     private fun constructTreeFromDirOrFile(container: ResourceContainer, project: Project): Pair<ImportResult, Tree> {

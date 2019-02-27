@@ -1,21 +1,22 @@
 package org.wycliffeassociates.otter.common.domain.resourcecontainer.project.markdown
 
 import org.wycliffeassociates.otter.common.collections.tree.OtterTree
+import org.wycliffeassociates.otter.common.collections.tree.OtterTreeNode
 import org.wycliffeassociates.otter.common.collections.tree.Tree
 import org.wycliffeassociates.otter.common.collections.tree.TreeNode
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Content
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.ImportResult
-import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IZipEntryTreeBuilder
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
+import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IZipEntryTreeBuilder
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.OtterFile
+import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.OtterFile.Companion.otterFileF
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
 import org.wycliffeassociates.resourcecontainer.entity.Project
 import java.io.BufferedReader
-import org.wycliffeassociates.otter.common.collections.tree.OtterTreeNode
-import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.OtterFile.Companion.otterFileF
+import java.io.Closeable
 import java.io.File
-import java.util.ArrayDeque
+import java.util.*
 import java.util.zip.ZipFile
 
 private const val FORMAT = "text/markdown"
@@ -27,31 +28,37 @@ class MarkdownProjectReader() : IProjectReader {
             project: Project,
             zipEntryTreeBuilder: IZipEntryTreeBuilder
     ): Pair<ImportResult, Tree> {
+        val toClose = mutableListOf<Closeable>()
+        try {
+            val projectRoot: OtterFile
+            val projectTreeRoot: OtterTree<OtterFile>
 
-        val projectRoot: OtterFile
-        val projectTreeRoot: OtterTree<OtterFile>
+            // TODO: 2/25/19
+            when (container.file.extension) {
+                "zip" -> {
+                    projectRoot = otterFileF(container.file.toPath().resolve(project.path).toFile())
+                    val zip = ZipFile(container.file)
+                    // The ZipEntry tree needs the ZipFile to stay open until later, so remember to close it.
+                    toClose.add(zip)
+                    projectTreeRoot = zipEntryTreeBuilder.buildOtterFileTree(zip, project.path)
+                }
+                else -> {
+                    projectRoot = otterFileF(container.file.resolve(project.path))
+                    projectTreeRoot = container.file.resolve(project.path).buildFileTree()
+                }
+            }
 
-        // TODO: 2/25/19
-        when (container.file.endsWith("zip")) {
-            false -> {
-                projectRoot = otterFileF(container.file.resolve(project.path))
-                projectTreeRoot = container.file.resolve(project.path).buildFileTree()
-            }
-            true -> {
-                projectRoot = otterFileF(container.file.toPath().resolve(project.path).toFile())
-                projectTreeRoot = ZipFile(container.file).use { zip ->
-                    zipEntryTreeBuilder.buildOtterFileTree(zip, project.path) }
-            }
+            val collectionKey = container.manifest.dublinCore.identifier
+
+            return projectTreeRoot
+                    .filterMarkdownFiles()
+                    ?.map<Any> { f -> contentList(f) ?: collection(collectionKey, f, projectRoot) }
+                    ?.flattenContent()
+                    ?.let { Pair(ImportResult.SUCCESS, it) }
+                    ?: Pair(ImportResult.LOAD_RC_ERROR, Tree(Unit))
+        } finally {
+            toClose.forEach { it.close() }
         }
-
-        val collectionKey = container.manifest.dublinCore.identifier
-
-        return projectTreeRoot
-                .filterMarkdownFiles()
-                ?.map<Any> { f -> contentList(f) ?: collection(collectionKey, f, projectRoot) }
-                ?.flattenContent()
-                ?.let { Pair(ImportResult.SUCCESS, it) }
-                ?: Pair(ImportResult.LOAD_RC_ERROR, Tree(Unit))
     }
 
     private fun fileToId(f: OtterFile): Int =

@@ -79,6 +79,7 @@ class ImportResourceContainer(
             ResourceContainer.load(file, OtterResourceContainerConfig())
         } catch (e: Exception) {
             // Could be checked or unchecked exception from RC library
+            e.printStackTrace()
             return null
         }
         return directoryProvider.getSourceContainerDirectory(extContainer)
