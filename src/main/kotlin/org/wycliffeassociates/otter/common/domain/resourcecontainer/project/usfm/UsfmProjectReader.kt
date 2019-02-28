@@ -12,7 +12,6 @@ import org.wycliffeassociates.resourcecontainer.ResourceContainer
 import org.wycliffeassociates.resourcecontainer.entity.Project
 import java.io.BufferedReader
 import java.io.File
-import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
 class UsfmProjectReader : IProjectReader {
@@ -49,9 +48,7 @@ class UsfmProjectReader : IProjectReader {
     private fun constructTreeFromZip(container: ResourceContainer, project: Project): Pair<ImportResult, Tree> {
         // Find the appropriate zip entry and use it to construct the project tree
         ZipFile(container.file).use { zip ->
-            zip.entries().asSequence().firstOrNull {
-                project.path == "./${it.name}"
-            }?.let {
+            zip.getEntry(project.path.substringAfter("/"))?.let {
                 return when (it.name.endsWith(".usfm", ignoreCase = true)) {
                     true -> {
                         val projectTree = Tree(project.toCollection())
