@@ -1,6 +1,7 @@
 package org.wycliffeassociates.otter.common.domain.resourcecontainer.project
 
 import java.io.BufferedReader
+import java.io.File
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
@@ -12,14 +13,11 @@ class OtterZipFile(
         private val zipEntry: ZipEntry? = null
 ) {
     val isFile = zipEntry != null
-    val name= absolutePath.removeSuffix(separator).let {
-        it.substring(it.lastIndexOf(separator) + 1)
-    }
-    val nameWithoutExtension = Regex("\\..*$").find(name)?.value?.let {
-        name.removeSuffix(it)
-    } ?: name
+    val name: String = File(absolutePath).name
+    val nameWithoutExtension = File(absolutePath).nameWithoutExtension
 
     fun bufferedReader(): BufferedReader = rootZipFile.getInputStream(zipEntry).bufferedReader()
+
     fun toRelativeString(parent: OtterFile): String = absolutePath
             .substringAfter(parent.absolutePath)
             .removePrefix(".")

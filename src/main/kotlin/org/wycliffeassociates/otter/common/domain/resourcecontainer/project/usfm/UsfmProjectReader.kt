@@ -15,6 +15,8 @@ import java.io.File
 import java.util.zip.ZipFile
 
 class UsfmProjectReader : IProjectReader {
+    private val currentDirectoryPrefix = Regex("""^\.?[/\\]""")
+
     override fun constructProjectTree(
             container: ResourceContainer,
             project: Project,
@@ -26,6 +28,7 @@ class UsfmProjectReader : IProjectReader {
             else -> constructTreeFromDirOrFile(container, project)
         }
     }
+
     private fun constructTreeFromDirOrFile(container: ResourceContainer, project: Project): Pair<ImportResult, Tree> {
         var result: ImportResult = ImportResult.SUCCESS
         val projectTree = Tree(project.toCollection())
@@ -46,87 +49,86 @@ class UsfmProjectReader : IProjectReader {
     }
 
     private fun constructTreeFromZip(container: ResourceContainer, project: Project): Pair<ImportResult, Tree> {
+        if (!project.path.endsWith(".usfm", ignoreCase = true)) {
+            return Pair(ImportResult.UNSUPPORTED_CONTENT, Tree(Unit))
+        }
         // Find the appropriate zip entry and use it to construct the project tree
         ZipFile(container.file).use { zip ->
-            zip.getEntry(project.path.substringAfter("/"))?.let {
-                return when (it.name.endsWith(".usfm", ignoreCase = true)) {
-                    true -> {
-                        val projectTree = Tree(project.toCollection())
-                        val result = parseFromBufferedReader(
-                                zip.getInputStream(it).bufferedReader(),
-                                projectTree,
-                                project.identifier
-                        )
-                        return when (result) {
-                            ImportResult.SUCCESS -> Pair(result, projectTree)
-                            else -> Pair(result, Tree(Unit))
-                        }
-                    }
-                    false -> Pair(ImportResult.UNSUPPORTED_CONTENT, Tree(Unit))
-                }
-            } ?: return Pair(ImportResult.LOAD_RC_ERROR, Tree(Unit))
-        }
-    }
-
-    private fun parseFileIntoProjectTree(file: File, root: Tree, projectIdentifier: String): ImportResult {
-        return when (file.extension) {
-            "usfm", "USFM" -> {
-                parseFromBufferedReader(file.bufferedReader(), root, projectIdentifier)
-            }
-            else -> {
-                ImportResult.UNSUPPORTED_CONTENT
-            }
-        }
-    }
-
-    private fun parseFromBufferedReader(bufferedReader: BufferedReader, root: Tree, projectIdentifier: String): ImportResult {
-        return try {
-            val chapters = parseUSFMToChapterTrees(bufferedReader, projectIdentifier)
-            root.addAll(chapters)
-            ImportResult.SUCCESS
-        } catch (e: RuntimeException) {
-            ImportResult.INVALID_CONTENT
-        }
-    }
-
-    private fun parseUSFMToChapterTrees(bufferedReader: BufferedReader, projectSlug: String): List<Tree> {
-        val doc = ParseUsfm(bufferedReader).parse()
-        return doc.chapters.map { chapter ->
-            val chapterSlug = "${projectSlug}_${chapter.key}"
-            val chapterCollection = Collection(
-                    chapter.key,
-                    chapterSlug,
-                    "chapter",
-                    chapter.key.toString(),
-                    null
-            )
-            val chapterTree = Tree(chapterCollection)
-            // create a chunk for the whole chapter
-            val chapChunk = Content(
-                    0,
-                    "chapter",
-                    chapter.value.values.first().number,
-                    chapter.value.values.last().number,
-                    null,
-                    null,
-                    null
-            )
-            chapterTree.addChild(TreeNode(chapChunk))
-
-            // Create content for each verse
-            for (verse in chapter.value.values) {
-                val content = Content(
-                        verse.number,
-                        "verse",
-                        verse.number,
-                        verse.number,
-                        null,
-                        null,
-                        null
+            val projectPath = currentDirectoryPrefix.replace(project.path, "")
+            zip.getEntry(projectPath)?.let {
+                val projectTree = Tree(project.toCollection())
+                val result = parseFromBufferedReader(
+                        zip.getInputStream(it).bufferedReader(),
+                        projectTree,
+                        project.identifier
                 )
-                chapterTree.addChild(TreeNode(content))
+                return when (result) {
+                    ImportResult.SUCCESS -> Pair(result, projectTree)
+                    else -> Pair(result, Tree(Unit))
+                }
             }
-            return@map chapterTree
+        } ?: return Pair(ImportResult.LOAD_RC_ERROR, Tree(Unit))
+    }
+}
+
+private fun parseFileIntoProjectTree(file: File, root: Tree, projectIdentifier: String): ImportResult {
+    return when (file.extension) {
+        "usfm", "USFM" -> {
+            parseFromBufferedReader(file.bufferedReader(), root, projectIdentifier)
         }
+        else -> {
+            ImportResult.UNSUPPORTED_CONTENT
+        }
+    }
+}
+
+private fun parseFromBufferedReader(bufferedReader: BufferedReader, root: Tree, projectIdentifier: String): ImportResult {
+    return try {
+        val chapters = parseUSFMToChapterTrees(bufferedReader, projectIdentifier)
+        root.addAll(chapters)
+        ImportResult.SUCCESS
+    } catch (e: RuntimeException) {
+        ImportResult.INVALID_CONTENT
+    }
+}
+
+private fun parseUSFMToChapterTrees(bufferedReader: BufferedReader, projectSlug: String): List<Tree> {
+    val doc = ParseUsfm(bufferedReader).parse()
+    return doc.chapters.map { chapter ->
+        val chapterSlug = "${projectSlug}_${chapter.key}"
+        val chapterCollection = Collection(
+                chapter.key,
+                chapterSlug,
+                "chapter",
+                chapter.key.toString(),
+                null
+        )
+        val chapterTree = Tree(chapterCollection)
+        // create a chunk for the whole chapter
+        val chapChunk = Content(
+                0,
+                "chapter",
+                chapter.value.values.first().number,
+                chapter.value.values.last().number,
+                null,
+                null,
+                null
+        )
+        chapterTree.addChild(TreeNode(chapChunk))
+
+        // Create content for each verse
+        for (verse in chapter.value.values) {
+            val content = Content(
+                    verse.number,
+                    "verse",
+                    verse.number,
+                    verse.number,
+                    null,
+                    null,
+                    null
+            )
+            chapterTree.addChild(TreeNode(content))
+        }
+        return@map chapterTree
     }
 }
