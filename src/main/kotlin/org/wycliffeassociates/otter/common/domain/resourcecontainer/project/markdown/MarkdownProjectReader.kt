@@ -33,7 +33,6 @@ class MarkdownProjectReader() : IProjectReader {
             val projectRoot: OtterFile
             val projectTreeRoot: OtterTree<OtterFile>
 
-            // TODO: 2/25/19
             when (container.file.extension) {
                 "zip" -> {
                     projectRoot = otterFileF(container.file.toPath().resolve(project.path).toFile())

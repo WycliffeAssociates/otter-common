@@ -48,10 +48,9 @@ class UsfmProjectReader : IProjectReader {
 
     private fun constructTreeFromZip(container: ResourceContainer, project: Project): Pair<ImportResult, Tree> {
         // Find the appropriate zip entry and use it to construct the project tree
-        // TODO: 2/25/19
         ZipFile(container.file).use { zip ->
             zip.entries().asSequence().firstOrNull {
-                project.path.contains(it.name)
+                project.path == "./${it.name}"
             }?.let {
                 return when (it.name.endsWith(".usfm", ignoreCase = true)) {
                     true -> {

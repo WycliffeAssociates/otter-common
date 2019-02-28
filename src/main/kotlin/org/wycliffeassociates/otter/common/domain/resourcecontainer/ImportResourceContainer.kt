@@ -114,7 +114,7 @@ class ImportResourceContainer(
 
     private fun copyFileToInternalDirectory(filepath: File, destinationDirectory: File): File {
         // Copy the resource container zip file into the correct directory
-        val destinationFile = File(destinationDirectory.absolutePath + "/" + filepath.name)
+        val destinationFile = File(destinationDirectory, filepath.name)
         if (filepath.absoluteFile != destinationFile) {
             filepath.copyTo(destinationFile, true)
             val success = destinationDirectory.contains(filepath.name)

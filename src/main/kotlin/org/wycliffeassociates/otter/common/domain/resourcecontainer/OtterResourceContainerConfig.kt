@@ -6,17 +6,17 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import org.wycliffeassociates.resourcecontainer.Config
-import java.io.BufferedReader
-import java.io.BufferedWriter
+import java.io.Reader
+import java.io.Writer
 
 class OtterResourceContainerConfig : Config {
     var config: OtterConfig? = null
     var extendedDublinCore: ExtendedDublinCore? = null
 
-    override fun read(br: BufferedReader): Config {
+    override fun read(reader: Reader): Config {
         val mapper = ObjectMapper(YAMLFactory())
         mapper.registerModule(KotlinModule())
-        config = br.use {
+        config = reader.use {
             mapper.readValue(it, OtterConfig::class.java)
         }
         config?.let {
@@ -25,11 +25,11 @@ class OtterResourceContainerConfig : Config {
         return this
     }
 
-    override fun write(bw: BufferedWriter) {
+    override fun write(writer: Writer) {
         val mapper = ObjectMapper(YAMLFactory())
         mapper.registerModule(KotlinModule())
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL)
-        bw.use {
+        writer.use {
             mapper.writeValue(it, config)
         }
     }
