@@ -1,7 +1,7 @@
 package org.wycliffeassociates.otter.common.data.rxmodel
 
 enum class MimeType(vararg types: String) {
-    USFM("text/usfm"),
+    USFM("text/usfm", "text/x-usfm"),
     MARKDOWN("text/markdown", "text/x-markdown"),
     WAV("audio/wav", "audio/wave", "audio/x-wave", "audio/vnd.wave");
 
