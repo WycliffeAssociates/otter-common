@@ -3,7 +3,6 @@ package org.wycliffeassociates.otter.common.data.rxmodel
 import io.reactivex.Observable
 
 data class Chunk(
-        override val id: Int,
         override val sort: Int,
         override val title: String,
         override val audio: AssociatedAudio,
