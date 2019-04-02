@@ -10,6 +10,5 @@ data class Chapter(
         override val hasResources: Boolean,
         override val resources: Observable<Resource>,
 
-        val progress: Observable<Int>,
         val chunks: Observable<Chunk>
 ) : BookElement
