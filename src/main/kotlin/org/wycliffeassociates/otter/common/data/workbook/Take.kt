@@ -11,5 +11,5 @@ data class Take(
     val number: Int,
     val format: MimeType,
     val createdTimestamp: LocalDate,
-    val deletedTimestamp: BehaviorRelay<Long?>
+    val deletedTimestamp: BehaviorRelay<LocalDate?>
 )
