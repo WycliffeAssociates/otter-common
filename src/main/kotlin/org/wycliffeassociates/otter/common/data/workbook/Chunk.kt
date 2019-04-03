@@ -1,13 +1,13 @@
-package org.wycliffeassociates.otter.common.data.rxmodel
+package org.wycliffeassociates.otter.common.data.workbook
 
 import io.reactivex.Observable
 
-data class Chapter(
+data class Chunk(
     override val sort: Int,
     override val title: String,
     override val audio: AssociatedAudio,
     override val hasResources: Boolean,
     override val resources: Observable<Resource>,
 
-    val chunks: Observable<Chunk>
+    val text: TextItem?
 ) : BookElement

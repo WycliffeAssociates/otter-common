@@ -1,4 +1,4 @@
-package org.wycliffeassociates.otter.common.data.rxmodel
+package org.wycliffeassociates.otter.common.data.workbook
 
 data class Resource(
     val sort: Int,

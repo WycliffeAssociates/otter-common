@@ -1,4 +1,4 @@
-package org.wycliffeassociates.otter.common.data.rxmodel
+package org.wycliffeassociates.otter.common.data.model
 
 enum class MimeType(vararg types: String) {
     USFM("text/usfm", "text/x-usfm"),

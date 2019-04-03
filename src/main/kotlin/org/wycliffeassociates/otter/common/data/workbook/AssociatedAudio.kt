@@ -1,4 +1,4 @@
-package org.wycliffeassociates.otter.common.data.rxmodel
+package org.wycliffeassociates.otter.common.data.workbook
 
 import com.jakewharton.rxrelay2.BehaviorRelay
 import com.jakewharton.rxrelay2.ReplayRelay

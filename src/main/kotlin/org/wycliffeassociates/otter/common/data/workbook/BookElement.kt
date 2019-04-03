@@ -1,4 +1,4 @@
-package org.wycliffeassociates.otter.common.data.rxmodel
+package org.wycliffeassociates.otter.common.data.workbook
 
 import io.reactivex.Observable
 
