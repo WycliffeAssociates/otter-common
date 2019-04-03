@@ -9,7 +9,7 @@ enum class MimeType(vararg types: String) {
     val norm = accepted.first()
 
     companion object {
-        private val map = values()
+        private val map: Map<String, MimeType> = values()
             .flatMap { mt -> mt.accepted.map { it to mt } }
             .associate { it }
 
