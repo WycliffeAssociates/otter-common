@@ -5,7 +5,10 @@ import io.reactivex.Observable
 interface BookElement {
     val sort: Int
     val title: String
-    val audio: AssociatedAudio
     val hasResources: Boolean
     val resources: Observable<Resource>
+}
+
+interface BookElementWithAudio : BookElement {
+    val audio: AssociatedAudio
 }
