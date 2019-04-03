@@ -10,8 +10,8 @@ enum class MimeType(vararg types: String) {
 
     companion object {
         private val map = values()
-                .flatMap { mt -> mt.accepted.map { it to mt } }
-                .associate { it }
+            .flatMap { mt -> mt.accepted.map { it to mt } }
+            .associate { it }
 
         fun of(type: String) = map[type]
     }
