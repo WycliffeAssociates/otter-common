@@ -3,8 +3,10 @@ package org.wycliffeassociates.otter.common.data.workbook
 import io.reactivex.Observable
 
 data class Book(
-    val sort: Int,
-    val title: String,
-    val chapters: Observable<Chapter>,
-    val hasResources: Boolean
-)
+    override val sort: Int,
+    override val title: String,
+    override val hasResources: Boolean,
+    override val resources: Observable<Resource>,
+
+    val chapters: Observable<Chapter>
+) : BookElement
