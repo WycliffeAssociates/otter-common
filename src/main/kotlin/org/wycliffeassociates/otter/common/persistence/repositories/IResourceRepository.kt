@@ -15,4 +15,5 @@ interface IResourceRepository : IRepository<Content> {
     fun unlinkFromContent(resource: Content, content: Content): Completable
     fun linkToCollection(resource: Content, collection: Collection, dublinCoreFk: Int): Completable
     fun unlinkFromCollection(resource: Content, collection: Collection): Completable
+    fun calculateAndSetSubtreeHasResources(collectionId: Int)
 }
