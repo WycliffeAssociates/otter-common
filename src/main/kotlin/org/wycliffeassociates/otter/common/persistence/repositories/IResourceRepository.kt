@@ -10,10 +10,9 @@ interface IResourceRepository : IRepository<Content> {
     fun getByContent(content: Content): Single<List<Content>>
     // Get resources for a collection
     fun getByCollection(collection: Collection): Single<List<Content>>
-    // Link/Unlink
+    // Link
     fun linkToContent(resource: Content, content: Content, dublinCoreFk: Int): Completable
-    fun unlinkFromContent(resource: Content, content: Content): Completable
     fun linkToCollection(resource: Content, collection: Collection, dublinCoreFk: Int): Completable
-    fun unlinkFromCollection(resource: Content, collection: Collection): Completable
+    // Prepare SubtreeHasResources table
     fun calculateAndSetSubtreeHasResources(collectionId: Int)
 }
