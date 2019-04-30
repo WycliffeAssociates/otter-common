@@ -9,11 +9,11 @@ data class Chapter(
     override val audio: AssociatedAudio,
     override val resources: List<ResourceGroup>,
 
-    override val subtreeResources: List<ResourceContainerInfo>,
+    override val subtreeResources: List<ResourceInfo>,
 
     val chunks: Observable<Chunk>
 
-) : BookElement, HasChildBookElements {
+) : BookElement, BookElementContainer {
 
     override val children: Observable<BookElement> = chunks.cast()
 

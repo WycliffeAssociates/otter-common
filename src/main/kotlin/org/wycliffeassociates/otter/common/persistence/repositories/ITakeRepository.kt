@@ -9,5 +9,5 @@ interface ITakeRepository : IRepository<Take> {
     fun insertForContent(take: Take, content: Content): Single<Int>
     fun getByContent(content: Content): Single<List<Take>>
     fun removeNonExistentTakes(): Completable
-    fun markDeleted(obj: Take): Completable
+    fun markDeleted(take: Take): Completable
 }
