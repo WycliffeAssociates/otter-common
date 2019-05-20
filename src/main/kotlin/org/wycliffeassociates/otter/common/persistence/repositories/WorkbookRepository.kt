@@ -63,7 +63,7 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
         return db.getCollectionMetaContent(chapterCollection)
             .map { metaContent ->
                 Chapter(
-                    title = "Chapter " + chapterCollection.titleKey,
+                    title = chapterCollection.titleKey,
                     sort = chapterCollection.sort,
                     resources = constructResourceGroups(chapterCollection),
                     audio = constructAssociatedAudio(metaContent),
@@ -83,7 +83,7 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
     }
 
     private fun chunk(content: Content) = Chunk(
-        title = "Chunk " + content.start.toString(),
+        title = content.start.toString(),
         sort = content.sort,
         audio = constructAssociatedAudio(content),
         resources = constructResourceGroups(content),
