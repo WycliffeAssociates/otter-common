@@ -9,7 +9,6 @@ import org.wycliffeassociates.otter.common.data.workbook.ResourceInfo
 interface IResourceRepository : IRepository<Content> {
     fun getResources(collection: Collection, resourceInfo: ResourceInfo): Observable<Content>
     fun getResources(content: Content, resourceInfo: ResourceInfo): Observable<Content>
-    fun getResourcesForCollectionAndChildren(collection: Collection, resourceInfo: ResourceInfo): Observable<Content>
     fun getSubtreeResourceInfo(collection: Collection): List<ResourceInfo>
     fun getResourceInfo(content: Content): List<ResourceInfo>
     fun getResourceInfo(collection: Collection): List<ResourceInfo>
