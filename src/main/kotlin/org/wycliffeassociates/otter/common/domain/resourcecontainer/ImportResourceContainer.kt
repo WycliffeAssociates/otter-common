@@ -11,7 +11,6 @@ import org.wycliffeassociates.otter.common.persistence.repositories.IResourceCon
 import org.wycliffeassociates.resourcecontainer.ResourceContainer
 import java.io.File
 import java.io.IOException
-import java.util.zip.ZipFile
 
 class ImportResourceContainer(
     private val resourceContainerRepository: IResourceContainerRepository,
@@ -35,9 +34,7 @@ class ImportResourceContainer(
 
     private fun importContainerZipFile(file: File): Single<ImportResult> {
         return Single.fromCallable {
-            if (!ZipFile(file).use(this::validateResourceContainer)) {
-                throw ImportException(ImportResult.INVALID_RC)
-            }
+            validateRcZip(file) // throws
 
             val internalDir = getInternalDirectory(file)
                 ?: throw ImportException(ImportResult.LOAD_RC_ERROR)
@@ -62,7 +59,7 @@ class ImportResourceContainer(
             .just(directory)
             .flatMap { containerDir ->
                 // Is this a valid resource container
-                if (!validateResourceContainer(containerDir)) return@flatMap Single.just(ImportResult.INVALID_RC)
+                if (!validateRcDir(containerDir)) return@flatMap Single.just(ImportResult.INVALID_RC)
 
                 val internalDir = getInternalDirectory(containerDir)
                     ?: return@flatMap Single.just(ImportResult.LOAD_RC_ERROR)
@@ -115,9 +112,10 @@ class ImportResourceContainer(
         return@fromCallable result
     }
 
-    private fun validateResourceContainer(dir: File): Boolean = dir.contains("manifest.yaml")
+    private fun validateRcDir(dir: File): Boolean = dir.contains("manifest.yaml")
 
-    private fun validateResourceContainer(zip: ZipFile): Boolean = zip.getEntry("manifest.yaml") != null
+    /** Throws appropriately if RC zip is invalid, otherwise returns true. */
+    private fun validateRcZip(zip: File): Boolean = ResourceContainer.load(zip, true).use { true }
 
     private fun copyFileToInternalDirectory(filepath: File, destinationDirectory: File): File {
         // Copy the resource container zip file into the correct directory
