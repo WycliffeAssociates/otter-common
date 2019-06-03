@@ -32,6 +32,7 @@ dependencies {
     //Testing
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile "org.mockito:mockito-core:2.+"
+    testImplementation "com.nhaarman.mockitokotlin2:mockito-kotlin:2.1.0"
 
     //resource container
     implementation 'org.wycliffeassociates:kotlin-resource-container'
