@@ -38,8 +38,15 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
         // Clear database connections and dispose observables for the
         // previous Workbook if a new one was requested.
         connections.clear()
-        return Workbook(book(source), book(target))
+        return Workbook(
+            book(source),
+            book(target),
+            source.getLanguageSlug(),
+            target.getLanguageSlug()
+        )
     }
+
+    private fun Collection.getLanguageSlug() = this.resourceContainer?.language?.slug
 
     private fun book(bookCollection: Collection): Book {
         return Book(
@@ -83,11 +90,12 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
     }
 
     private fun chunk(content: Content) = Chunk(
-        title = content.start.toString(),
         sort = content.sort,
         audio = constructAssociatedAudio(content),
         resources = constructResourceGroups(content),
-        text = textItem(content)
+        text = textItem(content),
+        start = content.start,
+        end = content.end
     )
 
     private fun textItem(content: Content?): TextItem? {
