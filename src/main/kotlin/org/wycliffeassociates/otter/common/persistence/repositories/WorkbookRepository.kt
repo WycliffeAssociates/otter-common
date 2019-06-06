@@ -45,6 +45,7 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
         return Book(
             title = bookCollection.titleKey,
             sort = bookCollection.sort,
+            slug = bookCollection.slug,
             chapters = constructBookChapters(bookCollection),
             subtreeResources = db.getSubtreeResourceInfo(bookCollection)
         )

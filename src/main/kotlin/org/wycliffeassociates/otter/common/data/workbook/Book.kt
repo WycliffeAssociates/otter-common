@@ -5,6 +5,7 @@ import io.reactivex.rxkotlin.cast
 
 data class Book(
     val sort: Int,
+    val slug: String,
     val title: String,
     val chapters: Observable<Chapter>,
 
