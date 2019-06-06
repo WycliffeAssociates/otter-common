@@ -105,12 +105,28 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
         val titleTextItem = textItem(title)
             ?: return null
 
-        return Resource(
+        val bodyComponent = body?.let {
+            // TODO: If the body text is null, should the body component be null or do we just return a null Resource?
+            textItem(it)?.let { bodyTextItem ->
+                Resource.Component(
+                    sort = it.sort,
+                    textItem = bodyTextItem,
+                    audio = constructAssociatedAudio(it),
+                    contentType = ContentType.BODY
+                )
+            }
+        }
+
+        val titleComponent = Resource.Component(
             sort = title.sort,
-            title = titleTextItem,
-            body = textItem(body),
-            titleAudio = constructAssociatedAudio(title),
-            bodyAudio = body?.let { constructAssociatedAudio(body) }
+            textItem = titleTextItem,
+            audio = constructAssociatedAudio(title),
+            contentType = ContentType.TITLE
+        )
+
+        return Resource(
+            title = titleComponent,
+            body = bodyComponent
         )
     }
 

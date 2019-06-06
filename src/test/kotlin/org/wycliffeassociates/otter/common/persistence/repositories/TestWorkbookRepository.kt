@@ -405,7 +405,7 @@ class TestWorkbookRepository {
 
         val expected = 1
         Assert.assertEquals("This chunk should have $expected Resources", expected, resources.size)
-        Assert.assertTrue("Expected resource text", resources.first().body?.text?.contains("TDD") ?: false)
+        Assert.assertTrue("Expected resource text", resources.first().body?.textItem?.text?.contains("TDD") ?: false)
     }
 
     @Test
