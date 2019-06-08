@@ -9,6 +9,7 @@ class OtterZipFile(
         val absolutePath: String,
         private val rootZipFile: ZipFile,
         private val separator: String,
+        val rootPathWithinZip: String?,
         val parentFile: OtterFile? = null,
         private val zipEntry: ZipEntry? = null
 ) {
@@ -29,11 +30,18 @@ class OtterZipFile(
                 absolutePath: String,
                 rootZipFile: ZipFile,
                 separator: String,
-                parentFile: OtterFile? = null,
-                zipEntry: ZipEntry? = null
+                rootPathWithinZip: String?,
+                parentFile: OtterFile? = null
         ): OtterFile {
-            return OtterFile.Z(OtterZipFile(absolutePath, rootZipFile, separator, parentFile, zipEntry))
+            val zipEntry = rootZipFile.getEntry(absolutePath)
+            return OtterFile.Z(OtterZipFile(
+                absolutePath = absolutePath,
+                rootZipFile = rootZipFile,
+                separator = separator,
+                rootPathWithinZip = rootPathWithinZip,
+                parentFile = parentFile,
+                zipEntry = zipEntry
+            ))
         }
     }
 }
-

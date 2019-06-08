@@ -40,7 +40,7 @@ class MarkdownProjectReader() : IProjectReader {
                     val zip = ZipFile(container.file)
                     // The ZipEntry tree needs the ZipFile to stay open until later, so remember to close it.
                     toClose.add(zip)
-                    projectTreeRoot = zipEntryTreeBuilder.buildOtterFileTree(zip, project.path)
+                    projectTreeRoot = zipEntryTreeBuilder.buildOtterFileTree(zip, project.path, container.accessor.root)
                 }
                 else -> {
                     projectRoot = otterFileF(container.file.resolve(project.path))
