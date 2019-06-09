@@ -35,10 +35,10 @@ class OtterZipFileTest {
 
     private val testToRelativeStringCases = listOf(
             "./test1/test2/" to "test1/test2",
-            ".test1/test2/" to "test1/test2",
+            ".test1/test2/" to ".test1/test2",
             "test1/test2/" to "test1/test2",
             "./test1/test2" to "test1/test2",
-            ".test1/test2" to "test1/test2",
+            ".test1/test2" to ".test1/test2",
             "test1/test2" to "test1/test2",
             "test1/test2/file.md" to "test1/test2/file.md",
             "test1/file.md" to "test1/file.md",
