@@ -65,7 +65,7 @@ class OtterZipFileTest {
     @Test
     fun testNameWithoutExtension() {
         testNameWithoutExtensionCases.forEach {
-            val ozf = OtterZipFile("$basePath${it.first}", mockZipFile, sep)
+            val ozf = OtterZipFile("$basePath${it.first}", mockZipFile, sep, null)
             checkStringResult(ozf.absolutePath, ozf.nameWithoutExtension, it.second)
         }
     }
@@ -73,7 +73,7 @@ class OtterZipFileTest {
     @Test
     fun testName() {
         testNameCases.forEach {
-            val ozf = OtterZipFile("$basePath${it.first}", mockZipFile, sep)
+            val ozf = OtterZipFile("$basePath${it.first}", mockZipFile, sep, null)
             checkStringResult(ozf.absolutePath, ozf.name, it.second)
         }
     }
@@ -81,7 +81,7 @@ class OtterZipFileTest {
     @Test
     fun testToRelativeString() {
         testToRelativeStringCases.forEach {
-            val ozf = OtterZipFile("$basePath${it.first}", mockZipFile, sep)
+            val ozf = OtterZipFile("$basePath${it.first}", mockZipFile, sep, null)
             checkStringResult(ozf.absolutePath, ozf.toRelativeString(mockParentFile), it.second)
         }
     }
