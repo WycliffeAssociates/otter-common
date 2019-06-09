@@ -13,17 +13,18 @@ class OtterZipFile(
         val parentFile: OtterFile? = null,
         private val zipEntry: ZipEntry? = null
 ) {
-    val isFile = zipEntry != null
+    val isFile = !(zipEntry == null || zipEntry.isDirectory)
     val name: String = File(absolutePath).name
     val nameWithoutExtension = File(absolutePath).nameWithoutExtension
 
     fun bufferedReader(): BufferedReader = rootZipFile.getInputStream(zipEntry).bufferedReader()
 
-    fun toRelativeString(parent: OtterFile): String = absolutePath
-            .substringAfter(parent.absolutePath)
-            .removePrefix(".")
-            .removePrefix(separator)
-            .removeSuffix(separator)
+    fun toRelativeString(parent: OtterFile): String {
+        val suffixTrimmed = absolutePath.removeSuffix(separator)
+        val prefixesToTrim = listOfNotNull(parent.absolutePath, rootPathWithinZip)
+            .flatMap { listOf(it, ".$separator", separator) }
+        return prefixesToTrim.fold(suffixTrimmed, String::removePrefix)
+    }
 
     companion object {
         fun otterFileZ(
