@@ -4,6 +4,7 @@ import org.wycliffeassociates.otter.common.collections.tree.Tree
 import org.wycliffeassociates.otter.common.collections.tree.TreeNode
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Content
+import org.wycliffeassociates.otter.common.data.model.ContentLabelEnum
 import org.wycliffeassociates.otter.common.data.model.ContentType
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.ImportResult
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.castOrFindImportException
@@ -130,7 +131,7 @@ private fun parseUSFMToChapterTrees(reader: Reader, projectSlug: String): List<T
         for (verse in chapter.value.values) {
             val content = Content(
                 sort = verse.number,
-                labelKey = "verse",
+                labelKey = ContentLabelEnum.VERSE.value,
                 start = verse.number,
                 end = verse.number,
                 selectedTake = null,

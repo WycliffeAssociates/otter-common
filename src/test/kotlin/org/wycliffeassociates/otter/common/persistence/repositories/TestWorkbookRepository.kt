@@ -116,7 +116,7 @@ class TestWorkbookRepository {
                                 start = verse,
                                 end = verse,
                                 sort = verse,
-                                labelKey = "verse",
+                                labelKey = ContentLabelEnum.VERSE.value,
                                 type = ContentType.TEXT,
                                 format = format,
                                 text = "/v $verse but test everything; hold fast what is good.",

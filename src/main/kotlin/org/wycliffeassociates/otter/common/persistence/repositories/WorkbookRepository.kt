@@ -77,7 +77,7 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
         return Observable.defer {
             db.getContentByCollection(chapterCollection)
                 .flattenAsObservable { it }
-                .filter { it.labelKey == "verse" }
+                .filter { it.labelKey == ContentLabelEnum.VERSE.value }
                 .map(this::chunk)
         }.cache()
     }
