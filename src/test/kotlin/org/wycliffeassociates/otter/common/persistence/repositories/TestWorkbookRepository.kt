@@ -93,7 +93,7 @@ class TestWorkbookRepository {
                                 id = autoincrement,
                                 resourceContainer = collection.resourceContainer,
                                 titleKey = chapter.toString(),
-                                labelKey = "chapter"
+                                labelKey = ContentLabelEnum.CHAPTER.value
                             )
                         }
                     }
@@ -135,7 +135,7 @@ class TestWorkbookRepository {
             Single.just(
                 Content(
                     sort = 0,
-                    labelKey = "chapter",
+                    labelKey = ContentLabelEnum.CHAPTER.value,
                     start = 1,
                     end = BasicTestParams.chunksPerChapter,
                     selectedTake = null,

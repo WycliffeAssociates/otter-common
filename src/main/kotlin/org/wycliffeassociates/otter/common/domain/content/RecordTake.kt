@@ -5,6 +5,7 @@ import io.reactivex.Single
 import io.reactivex.functions.Function4
 import org.wycliffeassociates.otter.common.data.model.Content
 import org.wycliffeassociates.otter.common.data.model.Collection
+import org.wycliffeassociates.otter.common.data.model.ContentLabelEnum
 import org.wycliffeassociates.otter.common.data.model.Take
 import org.wycliffeassociates.otter.common.domain.plugins.LaunchPlugin
 import org.wycliffeassociates.otter.common.persistence.EMPTY_WAVE_FILE_SIZE
@@ -76,7 +77,7 @@ class RecordTake(
 
         // Compile the complete filename
 
-        return if (content.labelKey == "chapter") {
+        return if (content.labelKey == ContentLabelEnum.CHAPTER.value) {
             listOf(
                     languageSlug,
                     rcSlug,
@@ -102,7 +103,7 @@ class RecordTake(
             .zip(
                     getMaxTakeNumber(content),
                     getNumberOfSubcollections(project),
-                    getContentCount(chapter) { it.labelKey != "chapter" },
+                    getContentCount(chapter) { it.labelKey != ContentLabelEnum.CHAPTER.value },
                     collectionRepository.getSource(project).toSingle(),
                     Function4 { highest, chapterCount, verseCount, source ->
                         val filename = generateFilename(

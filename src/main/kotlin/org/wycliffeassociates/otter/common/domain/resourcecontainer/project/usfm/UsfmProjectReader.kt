@@ -109,7 +109,7 @@ private fun parseUSFMToChapterTrees(reader: Reader, projectSlug: String): List<T
         val chapterCollection = Collection(
             sort = chapter.key,
             slug = chapterSlug,
-            labelKey = "chapter",
+            labelKey = ContentLabelEnum.CHAPTER.value,
             titleKey = chapter.key.toString(),
             resourceContainer = null
         )
@@ -117,7 +117,7 @@ private fun parseUSFMToChapterTrees(reader: Reader, projectSlug: String): List<T
         // create a chunk for the whole chapter
         val chapChunk = Content(
             sort = 0,
-            labelKey = "chapter",
+            labelKey = ContentLabelEnum.CHAPTER.value,
             start = chapter.value.values.first().number,
             end = chapter.value.values.last().number,
             selectedTake = null,
