@@ -95,9 +95,9 @@ class MarkdownProjectReader() : IProjectReader {
                     titleKey = "$id",
                     resourceContainer = null)
 
-    private fun content(sort: Int, label: String, id: Int, text: String, type: ContentType): Content? =
+    private fun content(sort: Int, id: Int, text: String, type: ContentType): Content? =
             if (text.isEmpty()) null
-            else Content(sort, label, id, id, null, text, FORMAT, type)
+            else Content(sort, ContentLabelEnum.of(type).value, id, id, null, text, FORMAT, type)
 
     private fun contentList(f: OtterFile): List<Content>? =
             bufferedReaderProvider(f)
@@ -108,8 +108,8 @@ class MarkdownProjectReader() : IProjectReader {
         var sort = 1
         return helpResources.flatMap { helpResource ->
             listOfNotNull(
-                    content(sort++, ContentLabelEnum.HELP_TITLE.value, fileId, helpResource.title, ContentType.TITLE),
-                    content(sort++, ContentLabelEnum.HELP_BODY.value, fileId, helpResource.body, ContentType.BODY)
+                    content(sort++, fileId, helpResource.title, ContentType.TITLE),
+                    content(sort++, fileId, helpResource.body, ContentType.BODY)
             )
         }
     }
