@@ -148,10 +148,10 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
                     when {
                         // If the first element isn't a title, skip this pair, because the body
                         // was already used by the previous window.
-                        a?.labelKey != "title" -> null
+                        a?.labelKey != ContentLabelEnum.HELP_TITLE.value -> null
                         // If the second element isn't a body, just use the title. (The second
                         // element will appear again in the next window.)
-                        b?.labelKey != "body" -> constructResource(a, null)
+                        b?.labelKey != ContentLabelEnum.HELP_BODY.value -> constructResource(a, null)
                         // Else, we have a title/body pair, so use it.
                         else -> constructResource(a, b)
                     }

@@ -6,6 +6,7 @@ import org.wycliffeassociates.otter.common.collections.tree.Tree
 import org.wycliffeassociates.otter.common.collections.tree.TreeNode
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Content
+import org.wycliffeassociates.otter.common.data.model.ContentLabelEnum
 import org.wycliffeassociates.otter.common.data.model.ContentType
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.ImportResult
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
@@ -107,8 +108,8 @@ class MarkdownProjectReader() : IProjectReader {
         var sort = 1
         return helpResources.flatMap { helpResource ->
             listOfNotNull(
-                    content(sort++, "title", fileId, helpResource.title, ContentType.TITLE),
-                    content(sort++, "body", fileId, helpResource.body, ContentType.BODY)
+                    content(sort++, ContentLabelEnum.HELP_TITLE.value, fileId, helpResource.title, ContentType.TITLE),
+                    content(sort++, ContentLabelEnum.HELP_BODY.value, fileId, helpResource.body, ContentType.BODY)
             )
         }
     }
