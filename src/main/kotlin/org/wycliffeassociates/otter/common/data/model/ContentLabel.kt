@@ -1,15 +1,13 @@
 package org.wycliffeassociates.otter.common.data.model
 
-import java.util.*
-
-enum class ContentLabelEnum(val value: String, val type: ContentType) {
+enum class ContentLabel(val value: String, val type: ContentType) {
     CHAPTER("chapter", ContentType.META),
     VERSE("verse", ContentType.TEXT),
     HELP_TITLE("title", ContentType.TITLE),
     HELP_BODY("body", ContentType.BODY);
 
     companion object {
-        fun of(contentType: ContentType) = when(contentType) {
+        fun of(contentType: ContentType) = when (contentType) {
             ContentType.META -> CHAPTER
             ContentType.TEXT -> VERSE
             ContentType.TITLE -> HELP_TITLE

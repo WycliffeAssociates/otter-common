@@ -6,7 +6,7 @@ import org.wycliffeassociates.otter.common.collections.tree.Tree
 import org.wycliffeassociates.otter.common.collections.tree.TreeNode
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.model.Content
-import org.wycliffeassociates.otter.common.data.model.ContentLabelEnum
+import org.wycliffeassociates.otter.common.data.model.ContentLabel
 import org.wycliffeassociates.otter.common.data.model.ContentType
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.ImportResult
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
@@ -97,7 +97,7 @@ class MarkdownProjectReader() : IProjectReader {
 
     private fun content(sort: Int, id: Int, text: String, type: ContentType): Content? =
             if (text.isEmpty()) null
-            else Content(sort, ContentLabelEnum.of(type).value, id, id, null, text, FORMAT, type)
+            else Content(sort, ContentLabel.of(type).value, id, id, null, text, FORMAT, type)
 
     private fun contentList(f: OtterFile): List<Content>? =
             bufferedReaderProvider(f)
