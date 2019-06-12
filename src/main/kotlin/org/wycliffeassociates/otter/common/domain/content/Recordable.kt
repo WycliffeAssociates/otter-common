@@ -4,7 +4,7 @@ import org.wycliffeassociates.otter.common.data.model.ContentType
 import org.wycliffeassociates.otter.common.data.workbook.*
 
 class Recordable private constructor(
-    val textItem: TextItem? = null, // This is only nullable because Chapter doesn't have a TextItem
+    val textItem: TextItem? = null,
     val audio: AssociatedAudio,
     val start: Int? = null,
     val end: Int? = null,
@@ -28,7 +28,7 @@ class Recordable private constructor(
                     sort = component.sort,
                     contentType = component.contentType
                 )
-                else -> throw Exception("Unsupported book element type found in Recordable.build")
+                else -> throw IllegalStateException("Unsupported book element type found in Recordable.build")
             }
         }
 
@@ -38,30 +38,7 @@ class Recordable private constructor(
             start = chunk.start,
             end = chunk.end
         )
-
-        // TODO: For test only
-        fun build(bookElement: BookElement, component: Resource.Component, audio: AssociatedAudio): Recordable {
-            return when (bookElement) {
-                is Chapter -> Recordable(
-                    textItem = component.textItem,
-                    audio = audio,
-                    sort = component.sort,
-                    contentType = component.contentType
-                )
-                is Chunk -> Recordable(
-                    textItem = component.textItem,
-                    audio = audio,
-                    start = bookElement.start,
-                    end = bookElement.end,
-                    sort = component.sort,
-                    contentType = component.contentType
-                )
-                else -> throw Exception("Unsupported book element type found in Recordable.build")
-            }
-        }
     }
-
-    fun getNumTakes() = audio.takes.count()
 
     override fun equals(other: Any?): Boolean {
         other?.let {
