@@ -4,7 +4,7 @@ import org.wycliffeassociates.otter.common.data.model.ContentType
 import org.wycliffeassociates.otter.common.data.workbook.*
 
 class Recordable private constructor(
-    val textItem: TextItem? = null,
+    val textItem: TextItem,
     val audio: AssociatedAudio,
     val start: Int? = null,
     val end: Int? = null,
@@ -32,23 +32,24 @@ class Recordable private constructor(
             }
         }
 
-        fun build(chunk: Chunk) = Recordable(
-            textItem = chunk.text,
-            audio = chunk.audio,
-            start = chunk.start,
-            end = chunk.end
-        )
+        fun build(chunk: Chunk): Recordable? =
+            chunk.text?.let {
+                Recordable(
+                    textItem = chunk.text,
+                    audio = chunk.audio,
+                    start = chunk.start,
+                    end = chunk.end
+                )
+            }
     }
 
     override fun equals(other: Any?): Boolean {
-        other?.let {
-            (other as Recordable).let {
-                return this.textItem?.text == other.textItem?.text
-                        && this.start == other.start
-                        && this.end == other.end
-                        && this.sort == other.sort
-                        && this.contentType == other.contentType
-            }
-        } ?: return false
+        return (other as? Recordable)?.let {
+            this.textItem.text == other.textItem.text
+                    && this.start == other.start
+                    && this.end == other.end
+                    && this.sort == other.sort
+                    && this.contentType == other.contentType
+        } ?: false
     }
 }

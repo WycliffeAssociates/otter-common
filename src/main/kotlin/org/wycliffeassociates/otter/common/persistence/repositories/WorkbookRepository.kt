@@ -47,6 +47,7 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
     }
 
     private fun Collection.getLanguageSlug() = this.resourceContainer?.language?.slug
+        ?: throw IllegalStateException("Collection with id=$id has null resource container")
 
     private fun book(bookCollection: Collection): Book {
         return Book(

@@ -46,7 +46,7 @@ class RecordTake(
         chunkCount: Long,
         rcSlug: String
     ): String {
-        val languageSlug = workbook.targetLanguageSlug ?: ""
+        val languageSlug = workbook.targetLanguageSlug
         val bookSlug = workbook.target.slug
         val chapterNumber = formatChapterNumber(chapter, chapterCount)
         val verseNumber = formatVerseNumber(recordable, chunkCount)
