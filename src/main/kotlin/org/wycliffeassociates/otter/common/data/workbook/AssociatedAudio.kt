@@ -2,6 +2,7 @@ package org.wycliffeassociates.otter.common.data.workbook
 
 import com.jakewharton.rxrelay2.BehaviorRelay
 import com.jakewharton.rxrelay2.ReplayRelay
+import io.reactivex.Observable
 
 data class AssociatedAudio(
     /**
@@ -15,7 +16,9 @@ data class AssociatedAudio(
      *  The UX may push updates here for propagation, and the persistence layer should respond by storing them.
      */
     val selected: BehaviorRelay<TakeHolder> = BehaviorRelay.createDefault(TakeHolder.empty)
-)
+) {
+    fun getAllTakesObservable(): Observable<Take> = takes.take(takes.values.size.toLong())
+}
 
 data class TakeHolder(val value: Take?) {
     companion object {

@@ -6,7 +6,7 @@ data class Resource(
     val title: Component,
     val body: Component?
 ) {
-    class Component(
+    data class Component(
         val sort: Int,
         val textItem: TextItem,
         val audio: AssociatedAudio,

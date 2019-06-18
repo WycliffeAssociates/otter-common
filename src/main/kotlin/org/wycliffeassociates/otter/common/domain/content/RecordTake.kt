@@ -3,10 +3,7 @@ package org.wycliffeassociates.otter.common.domain.content
 import io.reactivex.Single
 import io.reactivex.functions.Function3
 import org.wycliffeassociates.otter.common.data.model.MimeType
-import org.wycliffeassociates.otter.common.data.workbook.Take
-import org.wycliffeassociates.otter.common.data.workbook.Book
-import org.wycliffeassociates.otter.common.data.workbook.Chapter
-import org.wycliffeassociates.otter.common.data.workbook.Workbook
+import org.wycliffeassociates.otter.common.data.workbook.*
 import org.wycliffeassociates.otter.common.domain.plugins.LaunchPlugin
 import org.wycliffeassociates.otter.common.persistence.EMPTY_WAVE_FILE_SIZE
 import org.wycliffeassociates.otter.common.persistence.IWaveFileCreator
@@ -27,15 +24,11 @@ class RecordTake(
 
     private fun getNumberOfSubcollections(project: Book): Single<Long> = project.chapters.count()
 
-    private fun getNewTakeNumber(recordable: Recordable): Single<Int> = recordable.audio.takes.let { relay ->
-        Single.just (
-            relay.getValues(arrayOfNulls<Take>(relay.values.size))
-                .maxBy { it.number }
-                ?.number
-                ?.plus(1)
-                ?: 1
-        )
-    }
+    internal fun getNewTakeNumber(audio: AssociatedAudio): Single<Int> =
+        audio.getAllTakesObservable()
+            .map(Take::number)
+            .reduce(0, Math::max)
+            .map { it + 1 }
 
     private fun generateFilename(
         workbook: Workbook,
@@ -88,7 +81,7 @@ class RecordTake(
         projectAudioDirectory: File
     ): Single<Take> = Single
         .zip(
-            getNewTakeNumber(recordable),
+            getNewTakeNumber(recordable.audio),
             getNumberOfSubcollections(workbook.target),
             getContentCount(chapter),
             Function3 { newTakeNumber, chapterCount, verseCount ->
