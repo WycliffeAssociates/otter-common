@@ -2,6 +2,7 @@ package org.wycliffeassociates.otter.common.domain.content
 
 import org.wycliffeassociates.otter.common.data.model.ContentType
 import org.wycliffeassociates.otter.common.data.workbook.*
+import java.util.Objects
 
 class Recordable private constructor(
     val textItem: TextItem,
@@ -51,5 +52,9 @@ class Recordable private constructor(
                     && this.sort == other.sort
                     && this.contentType == other.contentType
         } ?: false
+    }
+
+    override fun hashCode(): Int {
+        return Objects.hash(textItem.text, start, end, sort, contentType)
     }
 }

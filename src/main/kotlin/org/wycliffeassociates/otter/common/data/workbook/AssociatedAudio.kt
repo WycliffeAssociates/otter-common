@@ -17,7 +17,7 @@ data class AssociatedAudio(
      */
     val selected: BehaviorRelay<TakeHolder> = BehaviorRelay.createDefault(TakeHolder.empty)
 ) {
-    fun getAllTakesObservable(): Observable<Take> = takes.take(takes.values.size.toLong())
+    fun getAllTakes(): Array<Take> = takes.getValues(emptyArray())
 }
 
 data class TakeHolder(val value: Take?) {

@@ -25,10 +25,13 @@ class RecordTake(
     private fun getNumberOfSubcollections(project: Book): Single<Long> = project.chapters.count()
 
     internal fun getNewTakeNumber(audio: AssociatedAudio): Single<Int> =
-        audio.getAllTakesObservable()
-            .map(Take::number)
-            .reduce(0, Math::max)
-            .map { it + 1 }
+        Single.just(
+            audio.getAllTakes()
+            .maxBy { it.number }
+            ?.number
+            ?.plus(1)
+            ?: 1
+        )
 
     private fun generateFilename(
         workbook: Workbook,
@@ -130,20 +133,20 @@ class RecordTake(
 
     private fun doLaunchPlugin(recordable: Recordable, take: Take): Single<Result> = launchPlugin
         .launchRecorder(take.file)
-        .flatMap {
+        .map {
             when (it) {
                 LaunchPlugin.Result.SUCCESS -> {
                     if (take.file.length() == EMPTY_WAVE_FILE_SIZE) {
                         take.file.delete()
-                        Single.just(Result.NO_AUDIO)
+                        Result.NO_AUDIO
                     } else {
                         insert(take, recordable)
-                        Single.just(Result.SUCCESS)
+                        Result.SUCCESS
                     }
                 }
                 LaunchPlugin.Result.NO_PLUGIN -> {
                     take.file.delete()
-                    Single.just(Result.NO_RECORDER)
+                    Result.NO_RECORDER
                 }
             }
         }
