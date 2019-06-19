@@ -62,12 +62,12 @@ class RecordTake(
         ).joinToString("_", postfix = ".wav")
     }
 
-    private fun formatChapterNumber(chapter: Chapter, chapterCount: Long): String {
+    internal fun formatChapterNumber(chapter: Chapter, chapterCount: Long): String {
         val chapterFormat = if (chapterCount > 99) "%03d" else "%02d"
         return chapterFormat.format(chapter.title.toIntOrNull() ?: chapter.sort)
     }
 
-    private fun formatVerseNumber(recordable: Recordable, chunkCount: Long): String? {
+    internal fun formatVerseNumber(recordable: Recordable, chunkCount: Long): String? {
         val verseFormat = if (chunkCount > 99) "%03d" else "%02d"
         return when (recordable.start) {
             null -> null
@@ -134,24 +134,28 @@ class RecordTake(
     private fun doLaunchPlugin(recordable: Recordable, take: Take): Single<Result> = launchPlugin
         .launchRecorder(take.file)
         .map {
-            when (it) {
-                LaunchPlugin.Result.SUCCESS -> {
-                    if (take.file.length() == EMPTY_WAVE_FILE_SIZE) {
-                        take.file.delete()
-                        Result.NO_AUDIO
-                    } else {
-                        insert(take, recordable)
-                        Result.SUCCESS
-                    }
-                }
-                LaunchPlugin.Result.NO_PLUGIN -> {
-                    take.file.delete()
-                    Result.NO_RECORDER
-                }
-            }
+            handlePluginResult(recordable, take, it)
         }
 
-    private fun insert(take: Take, recordable: Recordable) {
+    internal fun handlePluginResult(recordable: Recordable, take: Take, result: LaunchPlugin.Result): Result {
+        return when (result) {
+            LaunchPlugin.Result.SUCCESS -> {
+                if (take.file.length() == EMPTY_WAVE_FILE_SIZE) {
+                    take.file.delete()
+                    Result.NO_AUDIO
+                } else {
+                    insert(take, recordable)
+                    Result.SUCCESS
+                }
+            }
+            LaunchPlugin.Result.NO_PLUGIN -> {
+                take.file.delete()
+                Result.NO_RECORDER
+            }
+        }
+    }
+
+    internal fun insert(take: Take, recordable: Recordable) {
         recordable.audio.takes.accept(take)
     }
 }
