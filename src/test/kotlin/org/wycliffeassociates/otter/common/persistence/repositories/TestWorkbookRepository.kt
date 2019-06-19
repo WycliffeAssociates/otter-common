@@ -271,7 +271,7 @@ class TestWorkbookRepository {
     }
 
     @Test
-    fun workbookHasBooks() {
+    fun workbookHasBooksAndLanguageSlugs() {
         val workbook = buildBasicTestWorkbook()
 
         Assert.assertEquals(1, workbook.source.sort)
@@ -280,6 +280,8 @@ class TestWorkbookRepository {
         Assert.assertEquals("Genesis", workbook.target.title)
         Assert.assertArrayEquals(arrayOf("tn"), resourceSlugArray(workbook.source.subtreeResources))
         Assert.assertArrayEquals(arrayOf(), resourceSlugArray(workbook.target.subtreeResources))
+        Assert.assertEquals("en", workbook.sourceLanguageSlug)
+        Assert.assertEquals("la", workbook.targetLanguageSlug)
     }
 
     @Test
