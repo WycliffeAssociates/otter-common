@@ -1,7 +1,6 @@
 package org.wycliffeassociates.otter.common.domain.content
 
 import io.reactivex.Single
-import io.reactivex.functions.Function3
 import org.wycliffeassociates.otter.common.data.model.MimeType
 import org.wycliffeassociates.otter.common.data.workbook.*
 import org.wycliffeassociates.otter.common.domain.plugins.LaunchPlugin
@@ -20,131 +19,60 @@ class RecordTake(
         NO_AUDIO
     }
 
-    private fun getContentCount(chapter: Chapter): Single<Long> = chapter.chunks.count()
-
-    private fun getNumberOfSubcollections(project: Book): Single<Long> = project.chapters.count()
-
-    internal fun getNewTakeNumber(audio: AssociatedAudio): Single<Int> =
-        Single.just(
-            audio.getAllTakes()
-            .maxBy { it.number }
-            ?.number
-            ?.plus(1)
-            ?: 1
-        )
-
-    private fun generateFilename(
-        workbook: Workbook,
-        chapter: Chapter,
-        recordable: Recordable,
-        number: Int,
-        chapterCount: Long,
-        chunkCount: Long,
-        rcSlug: String
-    ): String {
-        val languageSlug = workbook.targetLanguageSlug
-        val bookSlug = workbook.target.slug
-        val chapterNumber = formatChapterNumber(chapter, chapterCount)
-        val verseNumber = formatVerseNumber(recordable, chunkCount)
-        val sortNumber = recordable.sort
-        val contentType = recordable.contentType?.toString()?.toLowerCase()
-        val takeNumber = "%02d".format(number)
-
-        return listOfNotNull(
-            languageSlug,
-            rcSlug,
-            bookSlug,
-            "c$chapterNumber",
-            verseNumber?.let { "v$it" },
-            sortNumber?.let { "s$it" },
-            contentType,
-            "t$takeNumber"
-        ).joinToString("_", postfix = ".wav")
+    fun record(
+        audio: AssociatedAudio,
+        projectAudioDir: File
+    ): Single<Result> {
+        val namer = FileNamer.Builder.build()
+        return audio.getNewTakeNumber()
+            .map { newTakeNumber ->
+                val filename = namer.generateName(newTakeNumber)
+                val chapterAudioDir = getChapterAudioDirectory(projectAudioDir, namer.formatChapterNumber())
+                create(newTakeNumber, filename, chapterAudioDir)
+            }
+            .flatMap {
+                doLaunchPlugin(audio::insertTake, it)
+            }
     }
 
-    internal fun formatChapterNumber(chapter: Chapter, chapterCount: Long): String {
-        val chapterFormat = if (chapterCount > 99) "%03d" else "%02d"
-        return chapterFormat.format(chapter.title.toIntOrNull() ?: chapter.sort)
-    }
-
-    internal fun formatVerseNumber(recordable: Recordable, chunkCount: Long): String? {
-        val verseFormat = if (chunkCount > 99) "%03d" else "%02d"
-        return when (recordable.start) {
-            null -> null
-            recordable.end -> verseFormat.format(recordable.start)
-            else -> "$verseFormat-$verseFormat".format(recordable.start, recordable.end)
-        }
+    private fun getChapterAudioDirectory(projectAudioDir: File, chapterNum: String): File {
+        val chapterAudioDir = projectAudioDir.resolve(chapterNum)
+        chapterAudioDir.mkdirs()
+        return chapterAudioDir
     }
 
     private fun create(
-        workbook: Workbook,
-        chapter: Chapter,
-        recordable: Recordable,
-        rcSlug: String,
-        projectAudioDirectory: File
-    ): Single<Take> = Single
-        .zip(
-            getNewTakeNumber(recordable.audio),
-            getNumberOfSubcollections(workbook.target),
-            getContentCount(chapter),
-            Function3 { newTakeNumber, chapterCount, verseCount ->
-                val filename = generateFilename(
-                    workbook,
-                    chapter,
-                    recordable,
-                    newTakeNumber,
-                    chapterCount,
-                    verseCount,
-                    rcSlug
-                )
-                val takeFile = getChapterAudioDirectory(projectAudioDirectory, chapter, chapterCount)
-                    .resolve(File(filename))
+        newTakeNumber: Int,
+        filename: String,
+        audioDir: File
+    ): Take {
+        val takeFile = audioDir.resolve(File(filename))
 
-                val newTake = Take(
-                    name = takeFile.name,
-                    file = takeFile,
-                    number = newTakeNumber,
-                    format = MimeType.WAV,
-                    createdTimestamp = LocalDate.now()
-                )
-                waveFileCreator.createEmpty(newTake.file)
-                newTake
-            }
+        val newTake = Take(
+            name = takeFile.name,
+            file = takeFile,
+            number = newTakeNumber,
+            format = MimeType.WAV,
+            createdTimestamp = LocalDate.now()
         )
-
-    private fun getChapterAudioDirectory(projectAudioDirectory: File, chapter: Chapter, chapterCount: Long): File {
-        val chapterAudioDirectory = projectAudioDirectory.resolve(formatChapterNumber(chapter, chapterCount))
-        chapterAudioDirectory.mkdirs()
-        return chapterAudioDirectory
+        waveFileCreator.createEmpty(newTake.file)
+        return newTake
     }
 
-    fun record(
-        workbook: Workbook,
-        chapter: Chapter,
-        recordable: Recordable,
-        rcSlug: String,
-        projectAudioDirectory: File
-    ): Single<Result> {
-        return create(workbook, chapter, recordable, rcSlug, projectAudioDirectory)
-            .flatMap {
-                doLaunchPlugin(recordable, it)
-            }
-    }
-
-    private fun doLaunchPlugin(recordable: Recordable, take: Take): Single<Result> = launchPlugin
+    private fun doLaunchPlugin(insertTake: (Take) -> Unit, take: Take): Single<Result> = launchPlugin
         .launchRecorder(take.file)
         .map {
-            handlePluginResult(recordable, take, it)
+            handlePluginResult(insertTake, take, it)
         }
 
-    internal fun handlePluginResult(recordable: Recordable, take: Take, result: LaunchPlugin.Result): Result {
+    internal fun handlePluginResult(insertTake: (Take) -> Unit, take: Take, result: LaunchPlugin.Result): Result {
         return when (result) {
             LaunchPlugin.Result.SUCCESS -> {
                 if (take.file.length() == EMPTY_WAVE_FILE_SIZE) {
                     take.file.delete()
                     Result.NO_AUDIO
                 } else {
-                    insert(take, recordable)
+                    insertTake(take)
                     Result.SUCCESS
                 }
             }
@@ -153,9 +81,5 @@ class RecordTake(
                 Result.NO_RECORDER
             }
         }
-    }
-
-    internal fun insert(take: Take, recordable: Recordable) {
-        recordable.audio.takes.accept(take)
     }
 }
