@@ -1,5 +1,7 @@
 package org.wycliffeassociates.otter.common.data.model
 
+import java.lang.IllegalArgumentException
+
 enum class MimeType(vararg types: String) {
     USFM("text/usfm", "text/x-usfm"),
     MARKDOWN("text/markdown", "text/x-markdown"),
@@ -14,5 +16,6 @@ enum class MimeType(vararg types: String) {
             .associate { it }
 
         fun of(type: String) = map[type]
+            ?: throw IllegalArgumentException("Mime type $type not supported")
     }
 }

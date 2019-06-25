@@ -94,35 +94,30 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
         sort = content.sort,
         audio = constructAssociatedAudio(content),
         resources = constructResourceGroups(content),
-        text = textItem(content),
+        textItem = textItem(content),
         start = content.start,
-        end = content.end
+        end = content.end,
+        contentType = content.type
     )
 
-    private fun textItem(content: Content?): TextItem? {
-        return content
-            ?.format
-            ?.let { MimeType.of(it) }
-            ?.let { mimeType ->
-                content.text?.let {
-                    TextItem(it, mimeType)
-                }
-            }
+    private fun textItem(content: Content): TextItem {
+        return content.format?.let { format ->
+            content.text?.let {
+                TextItem(it, MimeType.of(format))
+            } ?: throw IllegalStateException("Content text is null")
+        } ?: throw IllegalStateException("Content format is null")
     }
 
     private fun constructResource(title: Content, body: Content?): Resource? {
         val titleTextItem = textItem(title)
-            ?: return null
 
         val bodyComponent = body?.let {
-            textItem(it)?.let { bodyTextItem ->
-                Resource.Component(
-                    sort = it.sort,
-                    textItem = bodyTextItem,
-                    audio = constructAssociatedAudio(it),
-                    contentType = ContentType.BODY
-                )
-            }
+            Resource.Component(
+                sort = it.sort,
+                textItem = textItem(it),
+                audio = constructAssociatedAudio(it),
+                contentType = ContentType.BODY
+            )
         }
 
         val titleComponent = Resource.Component(

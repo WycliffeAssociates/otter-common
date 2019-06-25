@@ -1,13 +1,13 @@
 package org.wycliffeassociates.otter.common.domain.content
 
 import org.wycliffeassociates.otter.common.data.model.ContentType
-import java.lang.IllegalStateException
+import kotlin.IllegalStateException
 
-class FileNamer(
+class FileNamer private constructor(
     val start: Int? = null,
     val end: Int? = null,
     val sort: Int? = null,
-    val contentType: ContentType? = null,
+    val contentType: ContentType,
     val languageSlug: String,
     val bookSlug: String,
     val rcSlug: String,
@@ -20,7 +20,7 @@ class FileNamer(
         builder.start,
         builder.end,
         builder.sort,
-        builder.contentType,
+        builder.contentType!!,
         builder.languageSlug!!,
         builder.bookSlug!!,
         builder.rcSlug!!,
@@ -37,24 +37,10 @@ class FileNamer(
             bookSlug,
             "c${formatChapterNumber()}",
             formatVerseNumber()?.let { "v$it" },
-            sort?.let { "s$it" },
-            contentType?.nullIfUnused(),
+            sort()?.let { "s$it" },
+            contentType(),
             "t$takeNumber"
         ).joinToString("_", postfix = ".wav")
-    }
-
-    private fun ContentType.nullIfUnused(): ContentType? = when (this) {
-        ContentType.TEXT -> null
-        else -> this
-    }
-
-    internal fun formatVerseNumber(): String? {
-        val verseFormat = if (chunkCount > 99) "%03d" else "%02d"
-        return when (start) {
-            null -> null
-            end -> verseFormat.format(start)
-            else -> "$verseFormat-$verseFormat".format(start, end)
-        }
     }
 
     internal fun formatChapterNumber(): String {
@@ -62,50 +48,64 @@ class FileNamer(
         return chapterFormat.format(chapterTitle.toIntOrNull() ?: chapterSort)
     }
 
-    object Builder {
+    internal fun formatVerseNumber(): String? {
+        val verseFormat = if (chunkCount > 99) "%03d" else "%02d"
+
+        return when (contentType) {
+            ContentType.META -> null
+            else -> when(start) {
+                null -> null
+                end -> verseFormat.format(start)
+                else -> "$verseFormat-$verseFormat".format(start, end)
+            }
+        }
+    }
+
+    private fun sort(): Int? {
+        return when (contentType) {
+            ContentType.TITLE, ContentType.BODY -> sort
+            else -> null
+        }
+    }
+
+    private fun contentType(): ContentType? {
+        return when (contentType) {
+            ContentType.TEXT -> null
+            else -> contentType
+        }
+    }
+
+    abstract class Builder {
         var start: Int? = null
+            protected set
         var end: Int? = null
+            protected set
         var sort: Int? = null
+            protected set
         var contentType: ContentType? = null
+            protected set
         var languageSlug: String? = null
+            protected set
         var bookSlug: String? = null
+            protected set
         var rcSlug: String? = null
+            protected set
         var chunkCount: Long? = null
+            protected set
         var chapterCount: Long? = null
+            protected set
         var chapterTitle: String? = null
+            protected set
         var chapterSort: Int? = null
+            protected set
 
-        fun build(): FileNamer {
-            checkResourceContentTypeRequirements()
-            checkMetaContentTypeRequirements()
+        open fun build(): FileNamer {
             checkStartLessThanEnd()
-
             return FileNamer(this) // could throw NullPointerException if any non-nullable fields are null
         }
 
-        private fun checkResourceContentTypeRequirements() {
-            val isContentOrBody = listOf(ContentType.TITLE, ContentType.BODY).contains(contentType)
-            if (isContentOrBody && listOf(sort, start, end).any { it == null }) {
-                throw IllegalStateException(
-                    "sort, start and end should not be null when contentType is ${contentType.toString()}.\n" +
-                            "Found sort=$sort, start=$start, end=$end"
-                )
-            }
-        }
-
-        private fun checkMetaContentTypeRequirements() {
-            // TODO: Do we need checks for ContentType.TEXT?
-            // TODO: Is this requirement true?
-            if (contentType == ContentType.META) {
-                if (sort == null)
-                    throw IllegalStateException(
-                        "sort should be non-null when contentType is ${contentType.toString()}"
-                    )
-                if (start != null || end != null)
-                    throw IllegalStateException(
-                        "start and end should be null when contentType is ${contentType.toString()}"
-                    )
-            }
+        fun setResourceContainerSlug(rcSlug: String?) {
+            this.rcSlug = rcSlug
         }
 
         private fun checkStartLessThanEnd() {

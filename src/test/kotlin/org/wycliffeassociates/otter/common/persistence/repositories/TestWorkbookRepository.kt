@@ -502,7 +502,7 @@ class TestWorkbookRepository {
         chunks.forEach {
             Assert.assertTrue(
                 "Chunk text expected",
-                it.text?.text?.startsWith("/v ${it.title}")
+                it.textItem?.text?.startsWith("/v ${it.title}")
                     ?: false
             )
         }
