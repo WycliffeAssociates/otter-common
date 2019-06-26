@@ -104,10 +104,6 @@ class FileNamer private constructor(
             return FileNamer(this) // could throw NullPointerException if any non-nullable fields are null
         }
 
-        fun setResourceContainerSlug(rcSlug: String?) {
-            this.rcSlug = rcSlug
-        }
-
         private fun checkStartLessThanEnd() {
             if (end != null && start == null)
                 throw IllegalStateException("start should not be null if end is not null")

@@ -22,9 +22,8 @@ class RecordTake(
     fun record(
         audio: AssociatedAudio,
         projectAudioDir: File,
-        fileNamerBuilder: FileNamer.Builder
+        namer: FileNamer
     ): Single<Result> {
-        val namer = fileNamerBuilder.build()
         return audio.getNewTakeNumber()
             .map { newTakeNumber ->
                 val filename = namer.generateName(newTakeNumber)
