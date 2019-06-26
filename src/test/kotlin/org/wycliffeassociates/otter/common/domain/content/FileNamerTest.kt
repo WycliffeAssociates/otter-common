@@ -5,65 +5,33 @@ import org.wycliffeassociates.otter.common.assertEqualsForEach
 import org.wycliffeassociates.otter.common.data.model.ContentType
 
 class FileNamerTest {
-    inner class SimpleFileNamerBuilder(): FileNamer.Builder() {
-        constructor(
-            start: Int? = null,
-            end: Int? = null,
-            sort: Int? = null,
-            contentType: ContentType,
-            languageSlug: String,
-            bookSlug: String,
-            rcSlug: String,
-            chunkCount: Long,
-            chapterCount: Long,
-            chapterTitle: String?,
-            chapterSort: Int
-        ): this() {
-            this.start = start
-            this.end = end
-            this.sort = sort
-            this.contentType = contentType
-            this.languageSlug = languageSlug
-            this.bookSlug = bookSlug
-            this.rcSlug = rcSlug
-            this.chunkCount = chunkCount
-            this.chapterCount = chapterCount
-            this.chapterTitle = chapterTitle
-            this.chapterSort = chapterSort
-        }
-    }
+    private fun createFileNamer(chapterCount: Long, chapterTitle: String, chapterSort: Int) = FileNamer(
+        chapterCount = chapterCount,
+        chapterTitle = chapterTitle,
+        chapterSort = chapterSort,
+        start = 1,
+        end = 1,
+        chunkCount = 10,
+        sort = 0,
+        contentType = ContentType.BODY,
+        languageSlug = "en",
+        bookSlug = "gen",
+        rcSlug = "tn"
+    )
 
-    private fun createFileNamer(chapterCount: Long, chapterTitle: String?, chapterSort: Int): FileNamer {
-        return SimpleFileNamerBuilder(
-            chapterCount = chapterCount,
-            chapterTitle = chapterTitle,
-            chapterSort = chapterSort,
-            start = 1,
-            end = 1,
-            chunkCount = 10,
-            sort = 0,
-            contentType = ContentType.BODY,
-            languageSlug = "en",
-            bookSlug = "gen",
-            rcSlug = "tn"
-        ).build()
-    }
-
-    private fun createFileNamer(start: Int?, end: Int?, chunkCount: Long): FileNamer {
-        return SimpleFileNamerBuilder(
-            start = start,
-            end = end,
-            chunkCount = chunkCount,
-            sort = 0,
-            contentType = ContentType.BODY,
-            languageSlug = "en",
-            bookSlug = "gen",
-            rcSlug = "tn",
-            chapterCount = 1,
-            chapterTitle = "title",
-            chapterSort = 1
-        ).build()
-    }
+    private fun createFileNamer(start: Int?, end: Int?, chunkCount: Long) = FileNamer(
+        start = start,
+        end = end,
+        chunkCount = chunkCount,
+        sort = 0,
+        contentType = ContentType.BODY,
+        languageSlug = "en",
+        bookSlug = "gen",
+        rcSlug = "tn",
+        chapterCount = 1,
+        chapterTitle = "title",
+        chapterSort = 1
+    )
 
     data class FormatChapterNumberTestCase(val title: String, val sort: Int, val chapterCount: Int)
     private fun fcnCase(title: String, sort: Int, chapterCount: Int) =
