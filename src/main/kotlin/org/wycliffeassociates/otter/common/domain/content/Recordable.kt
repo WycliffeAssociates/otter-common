@@ -9,14 +9,4 @@ interface Recordable {
     val audio: AssociatedAudio
     val contentType: ContentType
     val sort: Int
-
-    fun equalsRecordable(other: Recordable): Boolean {
-        return this.textItem.text == other.textItem.text
-                && this.sort == other.sort
-                && this.contentType == other.contentType
-    }
-
-    fun hashCodeRecordable(): Int {
-        return Objects.hash(textItem.text, sort, contentType)
-    }
 }

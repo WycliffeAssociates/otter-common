@@ -12,16 +12,5 @@ data class Resource(
         override val textItem: TextItem,
         override val audio: AssociatedAudio,
         override val contentType: ContentType
-    ): Recordable {
-
-        override fun equals(other: Any?): Boolean {
-            return (other as? Recordable)?.let {
-                equalsRecordable(it)
-            } ?: false
-        }
-
-        override fun hashCode(): Int {
-            return hashCodeRecordable()
-        }
-    }
+    ): Recordable
 }
