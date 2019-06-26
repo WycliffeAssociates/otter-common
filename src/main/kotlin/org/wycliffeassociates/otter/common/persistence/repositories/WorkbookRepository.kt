@@ -112,8 +112,6 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
     }
 
     private fun constructResource(title: Content, body: Content?): Resource? {
-        val titleTextItem = textItem(title)
-
         val bodyComponent = body?.let {
             Resource.Component(
                 sort = it.sort,
@@ -125,7 +123,7 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
 
         val titleComponent = Resource.Component(
             sort = title.sort,
-            textItem = titleTextItem,
+            textItem = textItem(title),
             audio = constructAssociatedAudio(title),
             contentType = ContentType.TITLE
         )

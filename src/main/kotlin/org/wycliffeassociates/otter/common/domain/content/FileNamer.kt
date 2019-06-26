@@ -41,7 +41,7 @@ class FileNamer(
             "c${formatChapterNumber()}",
             formatVerseNumber()?.let { "v$it" },
             sort?.let { "s$it" },
-            contentType(),
+            formatContentType(),
             "t$takeNumber"
         ).joinToString("_", postfix = ".wav")
     }
@@ -61,10 +61,10 @@ class FileNamer(
         }
     }
 
-    private fun contentType(): ContentType? {
+    private fun formatContentType(): String? {
         return when (contentType) {
             ContentType.TEXT -> null
-            else -> contentType
+            else -> contentType.toString().toLowerCase()
         }
     }
 }
