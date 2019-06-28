@@ -40,9 +40,7 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
         connections.clear()
         return Workbook(
             book(source),
-            book(target),
-            source.getLanguageSlug(),
-            target.getLanguageSlug()
+            book(target)
         )
     }
 
@@ -55,6 +53,7 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
             sort = bookCollection.sort,
             slug = bookCollection.slug,
             chapters = constructBookChapters(bookCollection),
+            languageSlug = bookCollection.getLanguageSlug(),
             subtreeResources = db.getSubtreeResourceInfo(bookCollection)
         )
     }

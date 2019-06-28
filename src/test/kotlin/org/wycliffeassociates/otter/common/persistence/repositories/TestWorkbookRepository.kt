@@ -280,8 +280,8 @@ class TestWorkbookRepository {
         Assert.assertEquals("Genesis", workbook.target.title)
         Assert.assertArrayEquals(arrayOf("tn"), resourceSlugArray(workbook.source.subtreeResources))
         Assert.assertArrayEquals(arrayOf(), resourceSlugArray(workbook.target.subtreeResources))
-        Assert.assertEquals("en", workbook.sourceLanguageSlug)
-        Assert.assertEquals("la", workbook.targetLanguageSlug)
+        Assert.assertEquals("en", workbook.source.languageSlug)
+        Assert.assertEquals("la", workbook.target.languageSlug)
     }
 
     @Test

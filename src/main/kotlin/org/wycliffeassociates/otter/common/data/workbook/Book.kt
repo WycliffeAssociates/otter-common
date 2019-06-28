@@ -8,6 +8,7 @@ data class Book(
     val slug: String,
     val title: String,
     val chapters: Observable<Chapter>,
+    val languageSlug: String,
 
     override val subtreeResources: List<ResourceInfo>
 
