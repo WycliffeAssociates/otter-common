@@ -1,11 +1,10 @@
 package org.wycliffeassociates.otter.common.domain.resourcecontainer.project.usfm
 
-import org.wycliffeassociates.otter.common.collections.tree.Tree
-import org.wycliffeassociates.otter.common.collections.tree.TreeNode
+import org.wycliffeassociates.otter.common.collections.tree.OtterTree
+import org.wycliffeassociates.otter.common.collections.tree.OtterTreeNode
+import org.wycliffeassociates.otter.common.data.model.*
 import org.wycliffeassociates.otter.common.data.model.Collection
-import org.wycliffeassociates.otter.common.data.model.Content
-import org.wycliffeassociates.otter.common.data.model.ContentLabel
-import org.wycliffeassociates.otter.common.data.model.ContentType
+import org.wycliffeassociates.otter.common.domain.resourcecontainer.ImportException
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.ImportResult
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.castOrFindImportException
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.IProjectReader
@@ -21,11 +20,12 @@ private const val FORMAT = "text/usfm"
 class UsfmProjectReader : IProjectReader {
     private val currentDirectoryPrefix = Regex("""^\.?[/\\]""")
 
+    /** @throws ImportException */
     override fun constructProjectTree(
         container: ResourceContainer,
         project: Project,
         zipEntryTreeBuilder: IZipEntryTreeBuilder
-    ): Pair<ImportResult, Tree> {
+    ): OtterTree<CollectionOrContent> {
         // TODO 2/25/19
         return when (container.file.extension) {
             "zip" -> constructTreeFromZip(container, project)
@@ -36,56 +36,53 @@ class UsfmProjectReader : IProjectReader {
     private fun constructTreeFromDirOrFile(
         container: ResourceContainer,
         project: Project
-    ): Pair<ImportResult, Tree> {
-        var result: ImportResult = ImportResult.SUCCESS
-        val projectTree = Tree(project.toCollection())
+    ): OtterTree<CollectionOrContent> {
+        val projectTree = OtterTree<CollectionOrContent>(project.toCollection())
 
         val projectLocation = container.file.resolve(project.path)
         if (projectLocation.isDirectory) {
-            val files = projectLocation.listFiles()
-            for (file in files) {
-                result = parseFileIntoProjectTree(file, projectTree, project.identifier)
-                if (result != ImportResult.SUCCESS) return Pair(result, Tree(Unit))
+            projectLocation.listFiles()?.forEach { file ->
+                val result = parseFileIntoProjectTree(file, projectTree, project.identifier)
+                if (result != ImportResult.SUCCESS) throw ImportException(result)
             }
         } else {
             // Single file
-            result = parseFileIntoProjectTree(projectLocation, projectTree, project.identifier)
-            if (result != ImportResult.SUCCESS) return Pair(result, Tree(Unit))
+            val result = parseFileIntoProjectTree(projectLocation, projectTree, project.identifier)
+            if (result != ImportResult.SUCCESS) throw ImportException(result)
         }
-        return Pair(result, projectTree)
+        return projectTree
     }
 
     private fun constructTreeFromZip(
         container: ResourceContainer,
         project: Project
-    ): Pair<ImportResult, Tree> {
-        return if (!project.path.endsWith(".usfm", ignoreCase = true)) {
-            Pair(ImportResult.UNSUPPORTED_CONTENT, Tree(Unit))
-        } else try {
+    ): OtterTree<CollectionOrContent> {
+        if (!project.path.endsWith(".usfm", ignoreCase = true)) {
+            throw ImportException(ImportResult.UNSUPPORTED_CONTENT)
+        }
+        return try {
             ResourceContainer.load(container.file).use { rc ->
                 val projectPath = currentDirectoryPrefix.replace(project.path, "")
                 rc.accessor.getReader(projectPath).use { reader ->
-                    val projectTree = Tree(project.toCollection())
+                    val projectTree = OtterTree<CollectionOrContent>(project.toCollection())
                     val result = parseFromReader(
                         reader,
                         projectTree,
                         project.identifier
                     )
-                    Pair(
-                        result,
-                        if (result == ImportResult.SUCCESS) projectTree else Tree(Unit)
-                    )
+                    if (result != ImportResult.SUCCESS) throw ImportException(result)
+                    projectTree
                 }
             }
         } catch (e: Exception) {
-            Pair(e.castOrFindImportException()?.result ?: ImportResult.LOAD_RC_ERROR, Tree(Unit))
+            throw e.castOrFindImportException() ?: ImportException(ImportResult.LOAD_RC_ERROR)
         }
     }
 }
 
 private fun parseFileIntoProjectTree(
     file: File,
-    root: Tree,
+    root: OtterTree<CollectionOrContent>,
     projectIdentifier: String
 ): ImportResult {
     return when (file.extension) {
@@ -94,7 +91,11 @@ private fun parseFileIntoProjectTree(
     }
 }
 
-private fun parseFromReader(reader: Reader, root: Tree, projectIdentifier: String): ImportResult {
+private fun parseFromReader(
+    reader: Reader,
+    root: OtterTree<CollectionOrContent>,
+    projectIdentifier: String
+): ImportResult {
     return try {
         val chapters = parseUSFMToChapterTrees(reader, projectIdentifier)
         root.addAll(chapters)
@@ -104,7 +105,7 @@ private fun parseFromReader(reader: Reader, root: Tree, projectIdentifier: Strin
     }
 }
 
-private fun parseUSFMToChapterTrees(reader: Reader, projectSlug: String): List<Tree> {
+private fun parseUSFMToChapterTrees(reader: Reader, projectSlug: String): List<OtterTree<CollectionOrContent>> {
     val doc = ParseUsfm(reader).parse()
     return doc.chapters.map { chapter ->
         val chapterSlug = "${projectSlug}_${chapter.key}"
@@ -115,7 +116,7 @@ private fun parseUSFMToChapterTrees(reader: Reader, projectSlug: String): List<T
             titleKey = chapter.key.toString(),
             resourceContainer = null
         )
-        val chapterTree = Tree(chapterCollection)
+        val chapterTree = OtterTree<CollectionOrContent>(chapterCollection)
         // create a chunk for the whole chapter
         val chapChunk = Content(
             sort = 0,
@@ -127,7 +128,7 @@ private fun parseUSFMToChapterTrees(reader: Reader, projectSlug: String): List<T
             format = null,
             type = ContentType.META
         )
-        chapterTree.addChild(TreeNode(chapChunk))
+        chapterTree.addChild(OtterTreeNode(chapChunk))
 
         // Create content for each verse
         for (verse in chapter.value.values) {
@@ -141,7 +142,7 @@ private fun parseUSFMToChapterTrees(reader: Reader, projectSlug: String): List<T
                 format = FORMAT,
                 type = ContentType.TEXT
             )
-            chapterTree.addChild(TreeNode(content))
+            chapterTree.addChild(OtterTreeNode(content))
         }
         return@map chapterTree
     }
