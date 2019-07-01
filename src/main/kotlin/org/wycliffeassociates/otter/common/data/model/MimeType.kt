@@ -15,6 +15,7 @@ enum class MimeType(vararg types: String) {
             .flatMap { mt -> mt.accepted.map { it to mt } }
             .associate { it }
 
+        /** @throws [IllegalArgumentException] if the format type is not supported **/
         fun of(type: String) = map[type.toLowerCase()]
             ?: throw IllegalArgumentException("Mime type $type not supported")
     }
