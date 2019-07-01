@@ -84,7 +84,6 @@ class WavOutputStream @Throws(FileNotFoundException::class)
 
     @Throws(IOException::class)
     override fun close() {
-        println("closed called, internal")
         if (buffered) {
             bos.flush()
         }

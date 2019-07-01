@@ -9,6 +9,7 @@ class FloatRingBuffer(capacity: Int) {
     private var head = 0
     private var tail = 0
     private val buffer = FloatArray(capacity)
+    //this buffer contains x and y values for the high and low in each sample
     private val returnBuffer = FloatArray(capacity * 4)
 
     val isEmpty: Boolean

@@ -14,9 +14,7 @@ class WavFile {
 
     companion object {
         val SAMPLERATE = 44100
-        //val CHANNEL_TYPE = AudioFormat.CHANNEL_IN_MONO
         val NUM_CHANNELS = 1
-        //val ENCODING = AudioFormat.ENCODING_PCM_16BIT
         val BLOCKSIZE = 2
         val HEADER_SIZE = 44
         val AUDIO_LENGTH_LOCATION = 40
@@ -25,15 +23,8 @@ class WavFile {
         val BPP = 16
     }
 
-
-    //var metadata: WavMetadata?
     internal var totalAudioLength = 0
     internal var totalDataLength = 0
-
-    private var metadataLength = 0
-    fun getTotalMetadataLength(): Int {
-        return metadataLength + 20
-    }
 
 
     /**
@@ -42,31 +33,16 @@ class WavFile {
      */
     constructor(file: File) {
         this.file = file
-        //metadata = WavMetadata(file)
         parseHeader()
     }
-
-//    /**
-//     * Creates a new Wav file and initializes the header
-//     * @param file the path to use for creating the wav file
-//     * @param metadata metadata to attach to the wav file
-//     */
-//    constructor(file: File, metadata: WavMetadata) {
-//        this.file = file
-//
-//        initializeWavFile()
-//        this.metadata = metadata
-//    }
 
     @Throws(IOException::class)
     fun finishWrite(totalAudioLength: Int) {
         this.totalAudioLength = totalAudioLength
-        //writeMetadata(totalAudioLength)
     }
 
 
     fun initializeWavFile() {
-
         totalDataLength = HEADER_SIZE - 8
         totalAudioLength = 0
 
@@ -110,45 +86,19 @@ class WavFile {
         return header.array()
     }
 
-//    @Throws(IOException::class)
-//    private fun writeMetadata(totalAudioLength: Int) {
-//        this.totalAudioLength = totalAudioLength
-//        byte[] cueChunk = mMetadata.createCueChunk()
-//        byte[] labelChunk = mMetadata.createLabelChunk()
-//        byte[] trMetadata = mMetadata.createTrMetadataChunk()
-//        try (
-//            FileOutputStream out = new FileOutputStream(mFile, true)
-//            BufferedOutputStream bof = new BufferedOutputStream(out)
-//        ){
-//            //truncates existing metadata- new metadata may not be as long
-//            out.getChannel().truncate(HEADER_SIZE + mTotalAudioLength)
-//            bof.write(cueChunk)
-//            bof.write(labelChunk)
-//            bof.write(trMetadata)
-//        }
-//        mMetadataLength = cueChunk.length + labelChunk.length + trMetadata.length
-//        mTotalDataLength = mTotalAudioLength + mMetadataLength + HEADER_SIZE - 8
-//        overwriteHeaderData()
-//        return
-//    }
-
     fun overwriteHeaderData() {
-
         if (totalDataLength == (HEADER_SIZE - 8)) {
-            totalAudioLength = this.file.length().toInt() - HEADER_SIZE - metadataLength
-            totalDataLength = totalAudioLength + HEADER_SIZE - 8 + metadataLength
+            totalAudioLength = this.file.length().toInt() - HEADER_SIZE
+            totalDataLength = totalAudioLength + HEADER_SIZE - 8
         }
         RandomAccessFile(file, "rw").use {
             it.seek(0)
-            //if total length is still just the header, then check the file size
-
             it.write(generateHeaderArray())
         }
     }
 
     fun parseHeader() {
         if (file != null && file.length() >= HEADER_SIZE) {
-
             RandomAccessFile(file, "r").use {
                 val header = ByteArray(HEADER_SIZE)
                 it.read(header)
@@ -165,22 +115,4 @@ class WavFile {
             initializeWavFile()
         }
     }
-
-
-//    /**
-//     * Adds a marker to the wav file at the given position
-//     * Does not write to the file until commit is called.
-//     * @param label string for the label of the marker
-//     * @param position block index of the PCM array ex 44100 for 1 second
-//     * @return a reference to this to allow chaining with commit
-//     */
-//    fun addMarker(String label, int position): WavFile {
-//        WavCue cue = new WavCue(label, position)
-//        mMetadata.addCue(cue)
-//        return this
-//    }
-//
-//    fun commit(){
-//        writeMetadata(mTotalAudioLength)
-//    }
 }
