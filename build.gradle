@@ -1,12 +1,8 @@
 buildscript {
-    ext.kotlin_version = '1.2.71'
     ext.rxkotlin_version= '2.2.0'
 
     repositories {
         mavenCentral()
-    }
-    dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
@@ -36,13 +32,14 @@ dependencies {
     testCompile 'org.powermock:powermock-api-mockito2:2.+'
 
     //resource container
-    implementation 'org.wycliffeassociates:kotlin-resource-container'
+    implementation project(':kotlin-resource-container')
 
     //Jackson YAML
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.9.2"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.9.2"
 
-
+    // https://mvnrepository.com/artifact/de.sciss/jump3r
+    implementation project(':java-lame')
 }
 
 compileKotlin {

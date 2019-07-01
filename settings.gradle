@@ -1,2 +1,7 @@
-rootProject.name = '8woc2018-common'
-includeBuild "../kotlin-resource-container"
+rootProject.name = 'otter-common'
+
+include ':kotlin-resource-container'
+project(':kotlin-resource-container').projectDir = file('../kotlin-resource-container')
+
+include ':java-lame'
+project(':java-lame').projectDir = file('../java-lame')
