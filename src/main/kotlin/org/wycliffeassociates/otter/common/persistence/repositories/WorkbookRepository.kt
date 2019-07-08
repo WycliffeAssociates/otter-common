@@ -10,6 +10,7 @@ import io.reactivex.rxkotlin.plusAssign
 import org.wycliffeassociates.otter.common.data.model.*
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.workbook.*
+import java.time.LocalDate
 import java.util.*
 import java.util.Collections.synchronizedMap
 
@@ -188,13 +189,29 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
         val subscription = relay
             .skip(1) // ignore the initial value
             .subscribe {
-                db.updateTake(modelTake, it)
+                db.deleteTake(modelTake, it)
             }
 
         connections += subscription
         return relay
     }
 
+    /** Build a relay primed with the current modified timestamp, that responds to updates by writing to the DB. */
+    private fun modifiedRelay(modelTake: ModelTake): BehaviorRelay<LocalDate> {
+        val relay = BehaviorRelay.createDefault(modelTake.created)
+
+        val subscription = relay
+            .skip(1) // ignore the initial value
+            .doOnError {
+
+            }
+            .subscribe {
+                db.editTake(modelTake, it)
+            }
+
+        connections += subscription
+        return relay
+    }
 
     private fun deselectUponDelete(take: WorkbookTake, selectedTakeRelay: BehaviorRelay<TakeHolder>) {
         val subscription = take.deletedTimestamp
@@ -211,7 +228,7 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
             file = modelTake.path,
             number = modelTake.number,
             format = MimeType.WAV, // TODO
-            createdTimestamp = modelTake.created,
+            modifiedTimestamp = modifiedRelay(modelTake),
             deletedTimestamp = deletionRelay(modelTake)
         )
     }
@@ -221,7 +238,8 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
             filename = workbookTake.file.name,
             path = workbookTake.file,
             number = workbookTake.number,
-            created = workbookTake.createdTimestamp,
+            created = workbookTake.modifiedTimestamp.value
+                ?: throw IllegalStateException("Take ${workbookTake.file.name} has null modified timestamp"),
             deleted = null,
             played = false,
             markers = markers
@@ -293,7 +311,8 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
         fun getSubtreeResourceInfo(collection: Collection): List<ResourceInfo>
         fun insertTakeForContent(take: ModelTake, content: Content): Single<Int>
         fun getTakeByContent(content: Content): Single<List<ModelTake>>
-        fun updateTake(take: ModelTake, date: DateHolder): Completable
+        fun deleteTake(take: ModelTake, date: DateHolder): Completable
+        fun editTake(take: ModelTake, date: LocalDate): Completable
     }
 }
 
@@ -317,5 +336,6 @@ private class DefaultDatabaseAccessors(
 
     override fun insertTakeForContent(take: ModelTake, content: Content) = takeRepo.insertForContent(take, content)
     override fun getTakeByContent(content: Content) = takeRepo.getByContent(content)
-    override fun updateTake(take: ModelTake, date: DateHolder) = takeRepo.update(take.copy(deleted = date.value))
+    override fun deleteTake(take: ModelTake, date: DateHolder) = takeRepo.update(take.copy(deleted = date.value))
+    override fun editTake(take: ModelTake, date: LocalDate) = takeRepo.update(take.copy(created = date))
 }

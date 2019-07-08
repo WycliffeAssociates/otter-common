@@ -10,7 +10,7 @@ data class Take(
     val file: File,
     val number: Int,
     val format: MimeType,
-    val createdTimestamp: LocalDate,
+    val modifiedTimestamp: BehaviorRelay<LocalDate> = BehaviorRelay.createDefault(LocalDate.now()),
     val deletedTimestamp: BehaviorRelay<DateHolder> = BehaviorRelay.createDefault(DateHolder.empty)
 )
 
