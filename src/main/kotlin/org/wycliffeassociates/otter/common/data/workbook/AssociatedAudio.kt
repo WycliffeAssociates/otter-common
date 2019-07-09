@@ -20,7 +20,7 @@ data class AssociatedAudio(
 ) {
     fun insertTake(take: Take) = takes.accept(take)
 
-    fun selectTake(take: Take) {
+    fun selectTake(take: Take?) {
         selected.accept(TakeHolder(take))
     }
 
