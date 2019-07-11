@@ -190,6 +190,7 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
             .skip(1) // ignore the initial value
             .subscribe {
                 db.deleteTake(modelTake, it)
+                    .subscribe()
             }
 
         connections += subscription
@@ -202,11 +203,9 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
 
         val subscription = relay
             .skip(1) // ignore the initial value
-            .doOnError {
-
-            }
             .subscribe {
                 db.editTake(modelTake, it)
+                    .subscribe()
             }
 
         connections += subscription
@@ -215,7 +214,7 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
 
     private fun deselectUponDelete(take: WorkbookTake, selectedTakeRelay: BehaviorRelay<TakeHolder>) {
         val subscription = take.deletedTimestamp
-            .filter { localDate -> localDate.value != null }
+            .filter { dateHolder -> dateHolder.value != null }
             .filter { take == selectedTakeRelay.value?.value }
             .map { TakeHolder(null) }
             .subscribe(selectedTakeRelay)
@@ -263,6 +262,7 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
             .subscribe {
                 content.selectedTake = it.value?.let { wbTake -> takeMap[wbTake] }
                 db.updateContent(content)
+                    .subscribe()
             }
 
         /** Initial Takes read from the DB. */
