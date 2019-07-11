@@ -335,7 +335,7 @@ private class DefaultDatabaseAccessors(
     override fun getSubtreeResourceInfo(collection: Collection) = resourceRepo.getSubtreeResourceInfo(collection)
 
     override fun insertTakeForContent(take: ModelTake, content: Content) = takeRepo.insertForContent(take, content)
-    override fun getTakeByContent(content: Content) = takeRepo.getByContent(content)
+    override fun getTakeByContent(content: Content) = takeRepo.getByContent(content, includeDeleted = true)
     override fun deleteTake(take: ModelTake, date: DateHolder) = takeRepo.update(take.copy(deleted = date.value))
     override fun editTake(take: ModelTake, date: LocalDate) = takeRepo.update(take.copy(created = date))
 }
