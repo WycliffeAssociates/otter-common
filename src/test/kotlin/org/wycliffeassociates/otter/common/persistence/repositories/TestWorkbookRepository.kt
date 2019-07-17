@@ -499,7 +499,8 @@ class TestWorkbookRepository {
 
         // Delete the take, and confirm the selection is cleared
         take.deletedTimestamp.accept(DateHolder.now())
-        verify(mockedDb, times(2)).updateContent(any())
+        verify(mockedDb, times(1)).updateContent(any())
+        verify(mockedDb, times(1)).deleteTake(any(), any())
         Assert.assertNull("Selection should be null", chunk.audio.selected.value?.value)
     }
 
