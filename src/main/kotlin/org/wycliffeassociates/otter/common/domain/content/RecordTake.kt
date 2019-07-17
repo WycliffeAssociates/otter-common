@@ -52,7 +52,8 @@ class RecordTake(
             name = takeFile.name,
             file = takeFile,
             number = newTakeNumber,
-            format = MimeType.WAV
+            format = MimeType.WAV,
+            createdTimestamp = LocalDate.now()
         )
         waveFileCreator.createEmpty(newTake.file)
         return newTake

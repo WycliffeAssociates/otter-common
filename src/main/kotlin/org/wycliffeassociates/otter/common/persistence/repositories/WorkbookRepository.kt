@@ -182,26 +182,6 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
             }
     }
 
-    private fun callDbDeleteUponDeleted(wbTake: WorkbookTake, modelTake: ModelTake) {
-        val subscription = wbTake.deletedTimestamp
-            .skip(1) // ignore the initial value
-            .subscribe {
-                db.deleteTake(modelTake, it)
-                    .subscribe()
-            }
-        connections += subscription
-    }
-
-    private fun callDbEditUponModified(wbTake: WorkbookTake, modelTake: ModelTake) {
-        val subscription = wbTake.modifiedTimestamp
-            .skip(1) // ignore the initial value
-            .subscribe {
-                db.editTake(modelTake, it)
-                    .subscribe()
-            }
-        connections += subscription
-    }
-
     private fun deselectUponDelete(take: WorkbookTake, selectedTakeRelay: BehaviorRelay<TakeHolder>) {
         val subscription = take.deletedTimestamp
             .filter { dateHolder -> dateHolder.value != null }
@@ -211,13 +191,23 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
         connections += subscription
     }
 
+    private fun deleteFromDbUponDelete(take: WorkbookTake, modelTake: ModelTake) {
+        val subscription = take.deletedTimestamp
+            .filter { dateHolder -> dateHolder.value != null }
+            .subscribe {
+                db.deleteTake(modelTake, it)
+                    .subscribe()
+            }
+        connections += subscription
+    }
+
     private fun workbookTake(modelTake: ModelTake): WorkbookTake {
         return WorkbookTake(
             name = modelTake.filename,
             file = modelTake.path,
             number = modelTake.number,
             format = MimeType.WAV, // TODO
-            modifiedTimestamp = BehaviorRelay.createDefault(modelTake.created),
+            createdTimestamp = LocalDate.now(),
             deletedTimestamp = BehaviorRelay.createDefault(DateHolder(modelTake.deleted))
         )
     }
@@ -227,8 +217,7 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
             filename = workbookTake.file.name,
             path = workbookTake.file,
             number = workbookTake.number,
-            created = workbookTake.modifiedTimestamp.value
-                ?: throw IllegalStateException("Take ${workbookTake.file.name} has null modified timestamp"),
+            created = workbookTake.createdTimestamp,
             deleted = null,
             played = false,
             markers = markers
@@ -270,16 +259,19 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
             .subscribe(takesRelay)
 
         val takesRelaySubscription = takesRelay
+            .filter { it.deletedTimestamp.value?.value == null }
             .map { it to (takeMap[it] ?: modelTake(it))}
             .doOnNext { (wbTake, modelTake) ->
                 // When the selected take becomes deleted, deselect it.
                 deselectUponDelete(wbTake, selectedTakeRelay)
-                // When the take is edited or deleted, call the corresponding DB function.
-                callDbEditUponModified(wbTake, modelTake)
-                callDbDeleteUponDeleted(wbTake, modelTake)
+                // When a take becomes deleted, delete it from the database
+                deleteFromDbUponDelete(wbTake, modelTake)
             }
-            // Keep the takeMap current, and setup subscriptions to the modified and deleted relays.
+
+            // These are new takes
             .filter { (wbTake, _) -> !takeMap.contains(wbTake) }
+
+            // Keep the takeMap current
             .doOnNext { (wbTake, modelTake) ->
                 takeMap[wbTake] = modelTake
             }
@@ -308,7 +300,6 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
         fun insertTakeForContent(take: ModelTake, content: Content): Single<Int>
         fun getTakeByContent(content: Content): Single<List<ModelTake>>
         fun deleteTake(take: ModelTake, date: DateHolder): Completable
-        fun editTake(take: ModelTake, date: LocalDate): Completable
     }
 }
 
@@ -333,5 +324,4 @@ private class DefaultDatabaseAccessors(
     override fun insertTakeForContent(take: ModelTake, content: Content) = takeRepo.insertForContent(take, content)
     override fun getTakeByContent(content: Content) = takeRepo.getByContent(content, includeDeleted = true)
     override fun deleteTake(take: ModelTake, date: DateHolder) = takeRepo.update(take.copy(deleted = date.value))
-    override fun editTake(take: ModelTake, date: LocalDate) = takeRepo.update(take.copy(created = date))
 }

@@ -24,7 +24,8 @@ class RecordTakeTest {
             "name",
             file,
             1,
-            MimeType.WAV
+            MimeType.WAV,
+            LocalDate.now()
         )
     }
 

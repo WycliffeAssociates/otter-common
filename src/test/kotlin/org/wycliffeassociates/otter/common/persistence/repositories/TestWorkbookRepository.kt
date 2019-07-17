@@ -426,7 +426,8 @@ class TestWorkbookRepository {
             name = "TakeName",
             file = File("."),
             format = MimeType.WAV,
-            number = autoincrement
+            number = autoincrement,
+            createdTimestamp = LocalDate.now()
         )
         takes.accept(take)
         verify(mockedDb, times(1)).insertTakeForContent(any(), any())
@@ -447,23 +448,6 @@ class TestWorkbookRepository {
         // Delete a take, and verify the DB is called
         take.deletedTimestamp.accept(DateHolder(LocalDate.now()))
         verify(mockedDb, times(1)).deleteTake(any(), any())
-    }
-
-    @Test
-    fun settingModifiedTimestampCallsDbWrite() {
-        val mockedDb = buildBasicTestDb()
-        val workbook = buildBasicTestWorkbook(mockedDb)
-        val chapter = workbook.target.chapters.blockingIterable().sortedBy { it.sort }.first()
-        val chunk = chapter.chunks.filter { it.title == "3" }.blockingSingle()
-        val takes = chunk.audio.takes
-        val take = takes.blockingFirst()
-
-        // Verify precondition - no DB writes yet
-        verify(mockedDb, times(0)).editTake(any(), any())
-
-        // Delete a take, and verify the DB is called
-        take.modifiedTimestamp.accept(LocalDate.now())
-        verify(mockedDb, times(1)).editTake(any(), any())
     }
 
     @Test

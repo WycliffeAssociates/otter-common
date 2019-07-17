@@ -11,7 +11,7 @@ data class Take(
     val file: File,
     val number: Int,
     val format: MimeType,
-    val modifiedTimestamp: BehaviorRelay<LocalDate> = BehaviorRelay.createDefault(LocalDate.now()),
+    val createdTimestamp: LocalDate,
     val deletedTimestamp: BehaviorRelay<DateHolder> = BehaviorRelay.createDefault(DateHolder.empty)
 ) {
     override fun equals(other: Any?): Boolean {
