@@ -182,34 +182,24 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
             }
     }
 
-    /** Build a relay primed with the current deletion state, that responds to updates by writing to the DB. */
-    private fun deletionRelay(modelTake: ModelTake): BehaviorRelay<DateHolder> {
-        val relay = BehaviorRelay.createDefault(DateHolder(modelTake.deleted))
-
-        val subscription = relay
+    private fun callDbDeleteUponDeleted(wbTake: WorkbookTake, modelTake: ModelTake) {
+        val subscription = wbTake.deletedTimestamp
             .skip(1) // ignore the initial value
             .subscribe {
                 db.deleteTake(modelTake, it)
                     .subscribe()
             }
-
         connections += subscription
-        return relay
     }
 
-    /** Build a relay primed with the current modified timestamp, that responds to updates by writing to the DB. */
-    private fun modifiedRelay(modelTake: ModelTake): BehaviorRelay<LocalDate> {
-        val relay = BehaviorRelay.createDefault(modelTake.created)
-
-        val subscription = relay
+    private fun callDbEditUponModified(wbTake: WorkbookTake, modelTake: ModelTake) {
+        val subscription = wbTake.modifiedTimestamp
             .skip(1) // ignore the initial value
             .subscribe {
                 db.editTake(modelTake, it)
                     .subscribe()
             }
-
         connections += subscription
-        return relay
     }
 
     private fun deselectUponDelete(take: WorkbookTake, selectedTakeRelay: BehaviorRelay<TakeHolder>) {
@@ -227,8 +217,8 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
             file = modelTake.path,
             number = modelTake.number,
             format = MimeType.WAV, // TODO
-            modifiedTimestamp = modifiedRelay(modelTake),
-            deletedTimestamp = deletionRelay(modelTake)
+            modifiedTimestamp = BehaviorRelay.createDefault(modelTake.created),
+            deletedTimestamp = BehaviorRelay.createDefault(DateHolder(modelTake.deleted))
         )
     }
 
@@ -280,15 +270,21 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
             .subscribe(takesRelay)
 
         val takesRelaySubscription = takesRelay
-            // When the selected take becomes deleted, deselect it.
-            .doOnNext { deselectUponDelete(it, selectedTakeRelay) }
+            .map { it to (takeMap[it] ?: modelTake(it))}
+            .doOnNext { (wbTake, modelTake) ->
+                // When the selected take becomes deleted, deselect it.
+                deselectUponDelete(wbTake, selectedTakeRelay)
+                // When the take is edited or deleted, call the corresponding DB function.
+                callDbEditUponModified(wbTake, modelTake)
+                callDbDeleteUponDeleted(wbTake, modelTake)
+            }
+            // Keep the takeMap current, and setup subscriptions to the modified and deleted relays.
+            .filter { (wbTake, _) -> !takeMap.contains(wbTake) }
+            .doOnNext { (wbTake, modelTake) ->
+                takeMap[wbTake] = modelTake
+            }
 
-            // Keep the takeMap current.
-            .filter { !takeMap.contains(it) } // don't duplicate takes
-            .map { it to modelTake(it) }
-            .doOnNext { (wbTake, modelTake) -> takeMap[wbTake] = modelTake }
-
-            // Insert the new take into the DB.
+            // Insert the new take into the DB. (We already filtered existing takes out.)
             .subscribe { (_, modelTake) ->
                 db.insertTakeForContent(modelTake, content)
                     .subscribe { insertionId -> modelTake.id = insertionId }
