@@ -16,10 +16,7 @@ class EditTake(
         .launchEditor(take.file)
         .map {
             when (it) {
-                LaunchPlugin.Result.SUCCESS -> {
-                    // TODO
-                    Result.SUCCESS
-                }
+                LaunchPlugin.Result.SUCCESS -> Result.SUCCESS
                 LaunchPlugin.Result.NO_PLUGIN -> Result.NO_EDITOR
             }
         }
