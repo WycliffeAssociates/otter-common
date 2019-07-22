@@ -229,10 +229,10 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
         val takeMap = synchronizedMap(WeakHashMap<WorkbookTake, ModelTake>())
 
         /** The initial selected take, from the DB. */
-        val initialSelectedTake = TakeHolder(content.selectedTake?.let { workbookTake(it) })
+        val initialSelectedTake = content.selectedTake?.let { workbookTake(it) }
 
         /** Relay to send selected-take updates out to consumers, but also receive updates from UI. */
-        val selectedTakeRelay = BehaviorRelay.createDefault(initialSelectedTake)
+        val selectedTakeRelay = BehaviorRelay.createDefault(TakeHolder(initialSelectedTake))
 
         // When we receive an update, write it to the DB.
         val selectedTakeRelaySubscription = selectedTakeRelay
@@ -247,7 +247,13 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
         /** Initial Takes read from the DB. */
         val takesFromDb = db.getTakeByContent(content)
             .flattenAsObservable { list: List<ModelTake> -> list.sortedBy { it.number } }
-            .map { workbookTake(it) to it }
+            .map { modelTake ->
+                val wbTake = when (modelTake) {
+                    content.selectedTake -> initialSelectedTake
+                    else -> workbookTake(modelTake)
+                }
+                wbTake to modelTake
+            }
 
         /** Relay to send Takes out to consumers, but also receive new Takes from UI. */
         val takesRelay = ReplayRelay.create<WorkbookTake>()
