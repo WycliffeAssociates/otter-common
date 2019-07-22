@@ -10,6 +10,7 @@ import io.reactivex.rxkotlin.plusAssign
 import org.wycliffeassociates.otter.common.data.model.*
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.workbook.*
+import java.time.LocalDate
 import java.util.*
 import java.util.Collections.synchronizedMap
 
@@ -206,7 +207,7 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
             file = modelTake.path,
             number = modelTake.number,
             format = MimeType.WAV, // TODO
-            createdTimestamp = modelTake.created,
+            createdTimestamp = LocalDate.now(),
             deletedTimestamp = BehaviorRelay.createDefault(DateHolder(modelTake.deleted))
         )
     }
@@ -223,24 +224,12 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
         )
     }
 
-    private fun getWorkbookTake(
-        modelToWbTakeMap: MutableMap<ModelTake, WorkbookTake>,
-        modelTake: ModelTake
-    ): WorkbookTake {
-        return modelToWbTakeMap[modelTake] ?:
-            workbookTake(modelTake).apply {
-                modelToWbTakeMap[modelTake] = this
-            }
-    }
-
     private fun constructAssociatedAudio(content: Content): AssociatedAudio {
         /** Map to recover model.Take objects from workbook.Take objects. */
-        val wbToModelTakeMap = synchronizedMap(WeakHashMap<WorkbookTake, ModelTake>())
-        /** Map to retrieve workbook.Take objects from model.Take objects so we don't create duplicates */
-        val modelToWbTakeMap = synchronizedMap(WeakHashMap<ModelTake, WorkbookTake>())
+        val takeMap = synchronizedMap(WeakHashMap<WorkbookTake, ModelTake>())
 
         /** The initial selected take, from the DB. */
-        val initialSelectedTake = TakeHolder(content.selectedTake?.let { getWorkbookTake(modelToWbTakeMap, it) })
+        val initialSelectedTake = TakeHolder(content.selectedTake?.let { workbookTake(it) })
 
         /** Relay to send selected-take updates out to consumers, but also receive updates from UI. */
         val selectedTakeRelay = BehaviorRelay.createDefault(initialSelectedTake)
@@ -250,7 +239,7 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
             .distinctUntilChanged() // Don't write unless changed
             .skip(1) // Don't write the value we just loaded from the DB
             .subscribe {
-                content.selectedTake = it.value?.let { wbTake -> wbToModelTakeMap[wbTake] }
+                content.selectedTake = it.value?.let { wbTake -> takeMap[wbTake] }
                 db.updateContent(content)
                     .subscribe()
             }
@@ -258,31 +247,33 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
         /** Initial Takes read from the DB. */
         val takesFromDb = db.getTakeByContent(content)
             .flattenAsObservable { list: List<ModelTake> -> list.sortedBy { it.number } }
-            .map { getWorkbookTake(modelToWbTakeMap, it) to it }
+            .map { workbookTake(it) to it }
 
         /** Relay to send Takes out to consumers, but also receive new Takes from UI. */
         val takesRelay = ReplayRelay.create<WorkbookTake>()
         takesFromDb
             // Record the mapping between data types.
-            .doOnNext { (wbTake, modelTake) -> wbToModelTakeMap[wbTake] = modelTake }
+            .doOnNext { (wbTake, modelTake) -> takeMap[wbTake] = modelTake }
             // Feed the initial list to takesRelay
             .map { (wbTake, _) -> wbTake }
             .subscribe(takesRelay)
 
         val takesRelaySubscription = takesRelay
             .filter { it.deletedTimestamp.value?.value == null }
-            .map { it to (wbToModelTakeMap[it] ?: modelTake(it))}
+            .map { it to (takeMap[it] ?: modelTake(it))}
             .doOnNext { (wbTake, modelTake) ->
+                // When the selected take becomes deleted, deselect it.
                 deselectUponDelete(wbTake, selectedTakeRelay)
+                // When a take becomes deleted, delete it from the database
                 deleteFromDbUponDelete(wbTake, modelTake)
             }
 
             // These are new takes
-            .filter { (wbTake, _) -> !wbToModelTakeMap.contains(wbTake) }
+            .filter { (wbTake, _) -> !takeMap.contains(wbTake) }
 
             // Keep the takeMap current
             .doOnNext { (wbTake, modelTake) ->
-                wbToModelTakeMap[wbTake] = modelTake
+                takeMap[wbTake] = modelTake
             }
 
             // Insert the new take into the DB. (We already filtered existing takes out.)
