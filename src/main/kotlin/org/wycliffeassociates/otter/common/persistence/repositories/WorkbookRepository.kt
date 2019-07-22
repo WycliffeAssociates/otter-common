@@ -207,7 +207,7 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
             file = modelTake.path,
             number = modelTake.number,
             format = MimeType.WAV, // TODO
-            createdTimestamp = LocalDate.now(),
+            createdTimestamp = modelTake.created,
             deletedTimestamp = BehaviorRelay.createDefault(DateHolder(modelTake.deleted))
         )
     }
