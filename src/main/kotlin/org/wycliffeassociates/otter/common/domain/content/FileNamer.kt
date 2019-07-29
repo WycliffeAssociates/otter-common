@@ -38,8 +38,8 @@ class FileNamer(
             languageSlug,
             rcSlug,
             bookSlug,
-            "c${formatChapterNumber()}",
-            formatVerseNumber()?.let { "v$it" },
+            formatChapterNumber(),
+            formatVerseNumber(),
             formatSort(),
             formatContentType(),
             "t$takeNumber"
@@ -48,17 +48,18 @@ class FileNamer(
 
     internal fun formatChapterNumber(): String {
         val chapterFormat = if (chapterCount > 99) "%03d" else "%02d"
-        return chapterFormat.format(chapterTitle.toIntOrNull() ?: chapterSort)
+        val chapterNum = chapterFormat.format(chapterTitle.toIntOrNull() ?: chapterSort)
+        return "c$chapterNum"
     }
 
     internal fun formatVerseNumber(): String? {
         val verseFormat = if (chunkCount > 99) "%03d" else "%02d"
-
-        return when(start) {
+        val verseNum = when(start) {
             null -> null
             end -> verseFormat.format(start)
             else -> "$verseFormat-$verseFormat".format(start, end)
         }
+        return verseNum?.let { "v$it" }
     }
 
     private fun formatContentType(): String? {

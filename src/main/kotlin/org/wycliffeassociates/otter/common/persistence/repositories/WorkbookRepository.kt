@@ -10,7 +10,6 @@ import io.reactivex.rxkotlin.plusAssign
 import org.wycliffeassociates.otter.common.data.model.*
 import org.wycliffeassociates.otter.common.data.model.Collection
 import org.wycliffeassociates.otter.common.data.workbook.*
-import java.time.LocalDate
 import java.util.*
 import java.util.Collections.synchronizedMap
 

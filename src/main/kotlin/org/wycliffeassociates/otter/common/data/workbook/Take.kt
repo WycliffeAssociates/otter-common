@@ -20,9 +20,7 @@ data class Take(
         } ?: false
     }
 
-    override fun hashCode(): Int {
-        return Objects.hashCode(this.file)
-    }
+    override fun hashCode() = file.hashCode()
 }
 
 data class DateHolder(val value: LocalDate?) {
