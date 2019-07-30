@@ -34,8 +34,8 @@ class PCMCompressor(private val ringBuffer: FloatRingBuffer) {
         var max = Float.MIN_VALUE
 
         for(sample in accumulator) {
-            max = if(max < sample) sample else max
-            min = if(min > sample) sample else min
+            if(max < sample) max = sample
+            if(min > sample) min = sample
         }
         ringBuffer.add(min)
         ringBuffer.add(max)
