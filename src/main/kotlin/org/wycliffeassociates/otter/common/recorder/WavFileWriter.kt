@@ -1,30 +1,28 @@
-package org.wycliffeassociates.otter.common.app
+package org.wycliffeassociates.otter.common.recorder
 
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
-import org.wycliffeassociates.otter.common.io.wav.WavFile
-import org.wycliffeassociates.otter.common.io.wav.WavOutputStream
+import org.wycliffeassociates.otter.common.wav.WavFile
+import org.wycliffeassociates.otter.common.wav.WavOutputStream
 
 class WavFileWriter(
     private val wav: WavFile,
     private val audioStream: Observable<ByteArray>,
     private val onComplete: () -> Unit
-)
-{
+) {
     val writer = Observable.using(
         {
-            WavOutputStream(wav, false, WavOutputStream.BUFFERING.BUFFERED)
+            WavOutputStream(wav, append = false, buffered = true)
         },
-        {
-            writer -> audioStream.map {
+        { writer ->
+            audioStream.map {
                 writer.write(it)
             }
         },
-        {
-            writer ->
-                writer.close()
-                onComplete()
+        { writer ->
+            writer.close()
+            onComplete()
         }
     ).subscribeOn(Schedulers.io())
-    .subscribe()
+        .subscribe()
 }

@@ -1,5 +1,4 @@
-package org.wycliffeassociates.otter.common.app
-
+package org.wycliffeassociates.otter.common.recorder
 
 /**
  * Created by sarabiaj on 9/4/2015.

@@ -1,4 +1,4 @@
-package org.wycliffeassociates.otter.common.app
+package org.wycliffeassociates.otter.common.recorder
 
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
@@ -10,11 +10,8 @@ class ActiveRecordingRenderer(
     stream: Observable<ByteArray>,
     width: Int
 ) {
-
     val floatBuffer = FloatRingBuffer(width)
-
     val pcmCompressor = PCMCompressor(floatBuffer)
-
     val bb = ByteBuffer.allocate(1024)
 
     init {

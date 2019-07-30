@@ -1,4 +1,4 @@
-package org.wycliffeassociates.otter.common.app
+package org.wycliffeassociates.otter.common.recorder
 
 import org.wycliffeassociates.otter.common.collections.FloatRingBuffer
 
@@ -10,8 +10,8 @@ class PCMCompressor(private val ringBuffer: FloatRingBuffer) {
     var index = 0
 
     fun add(data: FloatArray) {
-        for(sample in data) {
-            if(index >= accumulator.size){
+        for (sample in data) {
+            if (index >= accumulator.size) {
                 sendDataToRingBuffer()
                 index = 0
             }
@@ -21,7 +21,7 @@ class PCMCompressor(private val ringBuffer: FloatRingBuffer) {
     }
 
     fun add(data: Float) {
-        if(index >= accumulator.size){
+        if (index >= accumulator.size) {
             sendDataToRingBuffer()
             index = 0
         }
@@ -33,9 +33,9 @@ class PCMCompressor(private val ringBuffer: FloatRingBuffer) {
         var min = Float.MAX_VALUE
         var max = Float.MIN_VALUE
 
-        for(sample in accumulator) {
-            if(max < sample) max = sample
-            if(min > sample) min = sample
+        for (sample in accumulator) {
+            if (max < sample) max = sample
+            if (min > sample) min = sample
         }
         ringBuffer.add(min)
         ringBuffer.add(max)

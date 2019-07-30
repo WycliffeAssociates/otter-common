@@ -1,5 +1,4 @@
-package org.wycliffeassociates.otter.common.io.wav
-
+package org.wycliffeassociates.otter.common.wav
 
 import java.io.BufferedOutputStream
 import java.io.Closeable
@@ -11,29 +10,22 @@ import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-
 /**
  * Created by sarabiaj on 10/4/2016.
  */
 class WavOutputStream @Throws(FileNotFoundException::class)
 @JvmOverloads constructor(
     internal val wav: WavFile,
-    append: Boolean = false,
-    flag: BUFFERING = BUFFERING.UNBUFFERED
+    private val append: Boolean = false,
+    private val buffered: Boolean = false
 ) : OutputStream(), Closeable, AutoCloseable {
-
-    enum class BUFFERING {
-        BUFFERED,
-        UNBUFFERED
-    }
 
     private val outputStream: OutputStream
     private lateinit var bos: BufferedOutputStream
     private var audioDataLength: Int = 0
-    private var buffered = false
 
     init {
-        if (wav.file.length().toInt() === 0) {
+        if (wav.file.length().toInt() == 0) {
             wav.initializeWavFile()
         }
         audioDataLength = wav.totalAudioLength
@@ -41,16 +33,19 @@ class WavOutputStream @Throws(FileNotFoundException::class)
         //if appending, then truncate metadata following the audio length, otherwise truncate after the header
         val whereToTruncate = if (append) audioDataLength else 0
         try {
-            FileOutputStream(wav.file, true).channel.truncate((whereToTruncate + WavFile.HEADER_SIZE).toLong())
+            FileOutputStream(wav.file, true)
+                .channel
+                .truncate(
+                    (whereToTruncate + WavFile.HEADER_SIZE).toLong()
+                )
         } catch (e: IOException) {
             e.printStackTrace()
         }
 
         //always need to use append to continue writing after the header rather than overwriting it
         outputStream = FileOutputStream(wav.file, true)
-        if (flag == BUFFERING.BUFFERED) {
+        if (buffered) {
             bos = BufferedOutputStream(outputStream)
-            buffered = true
         }
     }
 
@@ -99,14 +94,15 @@ class WavOutputStream @Throws(FileNotFoundException::class)
         val bb = ByteBuffer.allocate(4)
         bb.order(ByteOrder.LITTLE_ENDIAN)
         bb.putInt(totalDataSize.toInt())
-        val raf = RandomAccessFile(wav.file, "rw")
-        raf.seek(4)
-        raf.write(bb.array())
-        bb.clear()
-        bb.order(ByteOrder.LITTLE_ENDIAN)
-        bb.putInt(audioDataLength)
-        raf.seek(40)
-        raf.write(bb.array())
-        raf.close()
+        RandomAccessFile(wav.file, "rw").use { raf ->
+            raf.seek(4)
+            raf.write(bb.array())
+            bb.clear()
+            bb.order(ByteOrder.LITTLE_ENDIAN)
+            bb.putInt(audioDataLength)
+            raf.seek(40)
+            raf.write(bb.array())
+            raf.close()
+        }
     }
 }

@@ -1,16 +1,13 @@
-package org.wycliffeassociates.otter.common.io.wav
+package org.wycliffeassociates.otter.common.wav
 
 import java.io.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-
 /**
  * Created by sarabiaj on 6/2/2016.
  */
-class WavFile {
-
-    internal val file: File
+class WavFile(internal val file: File) {
 
     companion object {
         val SAMPLERATE = 44100
@@ -26,13 +23,7 @@ class WavFile {
     internal var totalAudioLength = 0
     internal var totalDataLength = 0
 
-
-    /**
-     * Loads an existing wav file and parses metadata it may have
-     * @param file an existing wav file to load
-     */
-    constructor(file: File) {
-        this.file = file
+    init {
         parseHeader()
     }
 
@@ -51,7 +42,7 @@ class WavFile {
         }
     }
 
-    fun generateHeaderArray(): ByteArray {
+    private fun generateHeaderArray(): ByteArray {
         val header = ByteBuffer.allocate(44)
         val longSampleRate = SAMPLERATE
         val byteRate = (BPP * SAMPLERATE * NUM_CHANNELS) / 8
@@ -86,30 +77,19 @@ class WavFile {
         return header.array()
     }
 
-    fun overwriteHeaderData() {
-        if (totalDataLength == (HEADER_SIZE - 8)) {
-            totalAudioLength = this.file.length().toInt() - HEADER_SIZE
-            totalDataLength = totalAudioLength + HEADER_SIZE - 8
-        }
-        RandomAccessFile(file, "rw").use {
-            it.seek(0)
-            it.write(generateHeaderArray())
-        }
-    }
-
-    fun parseHeader() {
-        if (file != null && file.length() >= HEADER_SIZE) {
+    private fun parseHeader() {
+        if (file.length() >= HEADER_SIZE) {
             RandomAccessFile(file, "r").use {
                 val header = ByteArray(HEADER_SIZE)
                 it.read(header)
                 val bb = ByteBuffer.wrap(header)
                 bb.order(ByteOrder.LITTLE_ENDIAN)
                 //Skip over "RIFF"
-                bb.getInt()
-                this.totalDataLength = bb.getInt()
+                bb.int
+                this.totalDataLength = bb.int
                 //Seek to the audio length field
                 bb.position(AUDIO_LENGTH_LOCATION)
-                totalAudioLength = bb.getInt()
+                totalAudioLength = bb.int
             }
         } else {
             initializeWavFile()
