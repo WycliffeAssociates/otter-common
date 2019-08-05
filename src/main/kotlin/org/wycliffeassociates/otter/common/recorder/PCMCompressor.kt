@@ -6,7 +6,7 @@ class PCMCompressor(private val ringBuffer: FloatRingBuffer) {
 
     //size is how small the waveform is being shrunk for visualization
     //arbitrary for now, could be based on number of seconds to show and resolution
-    val accumulator = FloatArray(480)
+    val accumulator = FloatArray(240)
     var index = 0
 
     fun add(data: FloatArray) {

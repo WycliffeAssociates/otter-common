@@ -4,13 +4,13 @@ package org.wycliffeassociates.otter.common.collections
 /**
  * Created by sarabiaj on 2/21/2017.
  */
-class FloatRingBuffer(capacity: Int) {
+class FloatRingBuffer(private val capacity: Int) {
 
     private var head = 0
     private var tail = 0
     private val buffer = FloatArray(capacity)
     //this buffer contains x and y values for the high and low in each sample
-    private val returnBuffer = FloatArray(capacity * 4)
+    private val returnBuffer = FloatArray(capacity)
 
     val isEmpty: Boolean
         @Synchronized
@@ -19,14 +19,15 @@ class FloatRingBuffer(capacity: Int) {
     val array: FloatArray
         @Synchronized
         get() {
-            var i = 0
-            val length = size()
-            while (i < length) {
-                returnBuffer[i * 4] = i.toFloat()
-                returnBuffer[i * 4 + 1] = get(i)
-                returnBuffer[i * 4 + 2] = i.toFloat()
-                returnBuffer[i * 4 + 3] = get(i + 1)
-                i += 2
+            val headToEndSize = capacity - head
+            //copies all values from head to the end of the array
+            System.arraycopy(buffer, head, returnBuffer, 0, headToEndSize)
+
+            //if head is 0, the entire array will have already been copied
+            //this case handles the wrap-around
+            if (head != 0) {
+                //length to copy is head, as that covers 0 to head
+                System.arraycopy(buffer, 0, returnBuffer, headToEndSize, head)
             }
             return returnBuffer
         }

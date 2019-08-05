@@ -10,7 +10,8 @@ class ActiveRecordingRenderer(
     stream: Observable<ByteArray>,
     width: Int
 ) {
-    val floatBuffer = FloatRingBuffer(width)
+    //double the width as for each pixel there will be a min and max value
+    val floatBuffer = FloatRingBuffer(width * 2)
     val pcmCompressor = PCMCompressor(floatBuffer)
     val bb = ByteBuffer.allocate(1024)
 
