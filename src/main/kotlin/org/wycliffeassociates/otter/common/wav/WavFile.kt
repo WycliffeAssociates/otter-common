@@ -10,14 +10,12 @@ import java.nio.ByteOrder
 class WavFile(internal val file: File) {
 
     companion object {
-        val SAMPLERATE = 44100
-        val NUM_CHANNELS = 1
-        val BLOCKSIZE = 2
-        val HEADER_SIZE = 44
-        val AUDIO_LENGTH_LOCATION = 40
-        val SIZE_OF_SHORT = 2
-        val AMPLITUDE_RANGE = 32767
-        val BPP = 16
+        const val SAMPLE_RATE = 44100
+        const val NUM_CHANNELS = 1
+        const val HEADER_SIZE = 44
+        const val AUDIO_LENGTH_LOCATION = 40
+        const val BIT_RATE = 16
+        const val PCM = 1
     }
 
     internal var totalAudioLength = 0
@@ -32,9 +30,8 @@ class WavFile(internal val file: File) {
         this.totalAudioLength = totalAudioLength
     }
 
-
     fun initializeWavFile() {
-        totalDataLength = HEADER_SIZE - 8
+        totalDataLength = HEADER_SIZE - 8 // the 8 accounts for chunk id and chunk size fields
         totalAudioLength = 0
 
         FileOutputStream(file, false).use {
@@ -42,10 +39,11 @@ class WavFile(internal val file: File) {
         }
     }
 
+    // http://soundfile.sapp.org/doc/WaveFormat/ for equations
     private fun generateHeaderArray(): ByteArray {
-        val header = ByteBuffer.allocate(44)
-        val longSampleRate = SAMPLERATE
-        val byteRate = (BPP * SAMPLERATE * NUM_CHANNELS) / 8
+        val header = ByteBuffer.allocate(HEADER_SIZE)
+        val longSampleRate = SAMPLE_RATE
+        val byteRate = (BIT_RATE * SAMPLE_RATE * NUM_CHANNELS) / 8
 
         header.order(ByteOrder.BIG_ENDIAN)
         header.put("RIFF".toByteArray(Charsets.US_ASCII))
@@ -58,13 +56,13 @@ class WavFile(internal val file: File) {
         header.put("fmt ".toByteArray(Charsets.US_ASCII))
 
         header.order(ByteOrder.LITTLE_ENDIAN)
-        header.putInt(16)
-        header.putShort(1) // format = 1
+        header.putInt(BIT_RATE)
+        header.putShort(PCM.toShort()) // format = 1 for pcm
         header.putShort(NUM_CHANNELS.toShort()) //number of channels
         header.putInt(longSampleRate)
         header.putInt(byteRate)
-        header.putShort(((NUM_CHANNELS * BPP) / 8).toShort()) // block align
-        header.putShort(BPP.toShort()) // bits per sample
+        header.putShort(((NUM_CHANNELS * BIT_RATE) / 8).toShort()) // block align
+        header.putShort(BIT_RATE.toShort()) // bits per sample
 
         header.order(ByteOrder.BIG_ENDIAN)
         header.put("data".toByteArray(Charsets.US_ASCII))
@@ -84,10 +82,10 @@ class WavFile(internal val file: File) {
                 it.read(header)
                 val bb = ByteBuffer.wrap(header)
                 bb.order(ByteOrder.LITTLE_ENDIAN)
-                //Skip over "RIFF"
+                // Skip over "RIFF"
                 bb.int
                 this.totalDataLength = bb.int
-                //Seek to the audio length field
+                // Seek to the audio length field
                 bb.position(AUDIO_LENGTH_LOCATION)
                 totalAudioLength = bb.int
             }

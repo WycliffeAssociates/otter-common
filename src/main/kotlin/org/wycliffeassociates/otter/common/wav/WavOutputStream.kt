@@ -16,7 +16,7 @@ import java.nio.ByteOrder
 class WavOutputStream @Throws(FileNotFoundException::class)
 @JvmOverloads constructor(
     internal val wav: WavFile,
-    private val append: Boolean = false,
+    append: Boolean = false,
     private val buffered: Boolean = false
 ) : OutputStream(), Closeable, AutoCloseable {
 
@@ -29,8 +29,8 @@ class WavOutputStream @Throws(FileNotFoundException::class)
             wav.initializeWavFile()
         }
         audioDataLength = wav.totalAudioLength
-        //Truncate the metadata for writing
-        //if appending, then truncate metadata following the audio length, otherwise truncate after the header
+        // Truncate the metadata for writing
+        // if appending, then truncate metadata following the audio length, otherwise truncate after the header
         val whereToTruncate = if (append) audioDataLength else 0
         try {
             FileOutputStream(wav.file, true)
@@ -42,7 +42,7 @@ class WavOutputStream @Throws(FileNotFoundException::class)
             e.printStackTrace()
         }
 
-        //always need to use append to continue writing after the header rather than overwriting it
+        // always need to use append to continue writing after the header rather than overwriting it
         outputStream = FileOutputStream(wav.file, true)
         if (buffered) {
             bos = BufferedOutputStream(outputStream)
@@ -90,16 +90,19 @@ class WavOutputStream @Throws(FileNotFoundException::class)
 
     @Throws(IOException::class)
     internal fun updateHeader() {
-        val totalDataSize = wav.file.length() - 36
+        // file size minus riff size chunks
+        val totalDataSize = wav.file.length() - 8
         val bb = ByteBuffer.allocate(4)
         bb.order(ByteOrder.LITTLE_ENDIAN)
         bb.putInt(totalDataSize.toInt())
         RandomAccessFile(wav.file, "rw").use { raf ->
+            // move to total file size index
             raf.seek(4)
             raf.write(bb.array())
             bb.clear()
             bb.order(ByteOrder.LITTLE_ENDIAN)
             bb.putInt(audioDataLength)
+            // move to audio size index
             raf.seek(40)
             raf.write(bb.array())
             raf.close()
