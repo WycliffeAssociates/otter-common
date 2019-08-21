@@ -1,6 +1,7 @@
 package org.wycliffeassociates.otter.common.persistence.repositories
 
 import com.nhaarman.mockitokotlin2.*
+import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.Single
 import org.junit.Assert
@@ -265,6 +266,18 @@ class TestWorkbookRepository {
             mockedDb.insertTakeForContent(any(), any())
         ).thenReturn(
             Single.just(autoincrement)
+        )
+
+        whenever(
+            mockedDb.deleteTake(any(), any())
+        ).thenReturn(
+            Completable.complete()
+        )
+
+        whenever(
+            mockedDb.updateContent(any())
+        ).thenReturn(
+            Completable.complete()
         )
 
         return buildWorkbook(mockedDb)
