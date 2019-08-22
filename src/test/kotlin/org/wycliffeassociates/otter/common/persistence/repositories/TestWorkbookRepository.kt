@@ -15,7 +15,6 @@ import java.time.LocalDate
 
 class TestWorkbookRepository {
     /** When a unique ID is needed, just use this. */
-    @Suppress("VAL_REASSIGNMENT_VIA_BACKING_FIELD")
     private var autoincrement: Int = 1
         get() = field++
 
