@@ -2,7 +2,8 @@ package org.wycliffeassociates.otter.common.navigation
 
 enum class TabGroupType {
     APP,
-    WORKBOOK,
-    ACTION,
+    CHOOSE_CHAPTER,
+    CHOOSE_RECORDABLE,
+    RECORD_CHUNK,
     RESOURCE_COMPONENT
 }
