@@ -1,19 +1,24 @@
 package org.wycliffeassociates.otter.common.navigation
 
 interface ITabGroupBuilder {
-    fun build(type: TabGroupType): ITabGroup =
-        when(type) {
+    fun build(type: TabGroupType): ITabGroup {
+        println("Building type $type")
+        return when (type) {
             TabGroupType.APP -> createAppTabGroup()
-            TabGroupType.WORKBOOK -> createWorkbookTabGroup()
-            TabGroupType.ACTION -> createActionTabGroup()
+            TabGroupType.CHOOSE_CHAPTER -> createChooseChapterTabGroup()
+            TabGroupType.CHOOSE_RECORDABLE -> createChooseRecordableTabGroup()
+            TabGroupType.RECORD_CHUNK -> createRecordChunkTabGroup()
             TabGroupType.RESOURCE_COMPONENT -> createResourceComponentTabGroup()
         }
+    }
 
     fun createAppTabGroup(): ITabGroup
 
-    fun createWorkbookTabGroup(): ITabGroup
+    fun createChooseChapterTabGroup(): ITabGroup
 
-    fun createActionTabGroup(): ITabGroup
+    fun createChooseRecordableTabGroup(): ITabGroup
+
+    fun createRecordChunkTabGroup(): ITabGroup
 
     fun createResourceComponentTabGroup(): ITabGroup
 }
