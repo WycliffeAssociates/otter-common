@@ -44,7 +44,7 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
         )
     }
 
-    private fun Collection.getLanguage() = this.resourceContainer?.language
+    private fun Collection.getResourceContainer() = this.resourceContainer
         ?: throw IllegalStateException("Collection with id=$id has null resource container")
 
     private fun book(bookCollection: Collection): Book {
@@ -53,7 +53,7 @@ class WorkbookRepository(private val db: IDatabaseAccessors) : IWorkbookReposito
             sort = bookCollection.sort,
             slug = bookCollection.slug,
             chapters = constructBookChapters(bookCollection),
-            language = bookCollection.getLanguage(),
+            resourceContainer = bookCollection.getResourceContainer(),
             subtreeResources = db.getSubtreeResourceInfo(bookCollection)
         )
     }
