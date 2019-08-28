@@ -1,9 +1,9 @@
 package org.wycliffeassociates.otter.common.navigation
 
 enum class TabGroupType {
-    APP,
-    CHOOSE_CHAPTER,
-    CHOOSE_RECORDABLE,
-    RECORD_CHUNK,
-    RESOURCE_COMPONENT
+    SELECT_PROJECT,
+    SELECT_CHAPTER,
+    SELECT_RECORDABLE,
+    RECORD_SCRIPTURE,
+    RECORD_RESOURCE
 }
