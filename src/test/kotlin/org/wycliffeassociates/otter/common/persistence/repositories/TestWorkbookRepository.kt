@@ -42,7 +42,8 @@ class TestWorkbookRepository {
 
     private val resourceInfoTn = ResourceInfo(
         slug = "tn",
-        title = "translationNotes"
+        title = "translationNotes",
+        type = "help"
     )
 
     private val collectionBase = Collection(
