@@ -83,7 +83,7 @@ class MarkdownProjectReader(private val isHelp: Boolean) : IProjectReader {
     }
 
     private fun fileToId(f: OtterFile): Int =
-        f.nameWithoutExtension.toIntOrNull() ?: 0
+        f.nameWithoutExtension.toIntOrNull() ?: 1
 
     private fun fileToSlug(file: OtterFile, projectRoot: OtterFile): String =
         file.toRelativeString(projectRoot)
@@ -143,7 +143,10 @@ class MarkdownProjectReader(private val isHelp: Boolean) : IProjectReader {
         } else {
             this.bufferedReader()
                 .use { ParseMd.parse(it) }
-                .map { content(ContentType.TEXT, fileId, sort++, it) }
+                .map {
+                    val index = if (collectionForEachFile) sort else fileId
+                    content(ContentType.TEXT, index, sort++, it)
+                }
         }
         return contents.filterNot { it.text.isNullOrEmpty() }
     }
