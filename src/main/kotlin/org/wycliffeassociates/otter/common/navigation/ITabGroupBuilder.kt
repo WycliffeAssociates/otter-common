@@ -3,21 +3,21 @@ package org.wycliffeassociates.otter.common.navigation
 interface ITabGroupBuilder {
     fun build(type: TabGroupType): ITabGroup {
         return when (type) {
-            TabGroupType.SELECT_PROJECT -> createSelectProjectTabGroup()
-            TabGroupType.SELECT_CHAPTER -> createSelectChapterTabGroup()
-            TabGroupType.SELECT_RECORDABLE -> createSelectRecordableTabGroup()
-            TabGroupType.RECORD_SCRIPTURE -> createRecordScriptureTabGroup()
-            TabGroupType.RECORD_RESOURCE -> createRecordResourceTabGroup()
+            TabGroupType.PROJECT -> buildProjectTabGroup()
+            TabGroupType.CHAPTER -> buildChapterTabGroup()
+            TabGroupType.RECORDABLE -> buildRecordableTabGroup()
+            TabGroupType.RECORD_SCRIPTURE -> buildRecordScriptureTabGroup()
+            TabGroupType.RECORD_RESOURCE -> buildRecordResourceTabGroup()
         }
     }
 
-    fun createSelectProjectTabGroup(): ITabGroup
+    fun buildProjectTabGroup(): ITabGroup
 
-    fun createSelectChapterTabGroup(): ITabGroup
+    fun buildChapterTabGroup(): ITabGroup
 
-    fun createSelectRecordableTabGroup(): ITabGroup
+    fun buildRecordableTabGroup(): ITabGroup
 
-    fun createRecordScriptureTabGroup(): ITabGroup
+    fun buildRecordScriptureTabGroup(): ITabGroup
 
-    fun createRecordResourceTabGroup(): ITabGroup
+    fun buildRecordResourceTabGroup(): ITabGroup
 }
