@@ -10,13 +10,13 @@ data class Book(
     val slug: String,
     val title: String,
     val chapters: Observable<Chapter>,
-    val resourceContainer: ResourceMetadata,
+    val resourceMetadata: ResourceMetadata,
 
     override val subtreeResources: List<ResourceInfo>
 
 ) : BookElementContainer {
     val language: Language
-        get() = resourceContainer.language
+        get() = resourceMetadata.language
 
     override val children: Observable<BookElement> = chapters.cast()
 }
