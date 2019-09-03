@@ -12,7 +12,7 @@ data class Book(
     val chapters: Observable<Chapter>,
     val resourceMetadata: ResourceMetadata,
 
-    override val subtreeResources: List<ResourceInfo>
+    override val subtreeResources: List<ResourceMetadata>
 
 ) : BookElementContainer {
     val language: Language
