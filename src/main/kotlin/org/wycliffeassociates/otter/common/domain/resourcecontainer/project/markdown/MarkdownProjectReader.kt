@@ -82,7 +82,7 @@ class MarkdownProjectReader(private val isHelp: Boolean) : IProjectReader {
         ProjectFileTree(file.buildFileTree(), otterFileF(file))
     }
 
-    private fun fileToId(f: OtterFile): Int =
+    private fun fileToIndex(f: OtterFile): Int =
         f.nameWithoutExtension.toIntOrNull() ?: 1
 
     private fun fileToSlug(file: OtterFile, projectRoot: OtterFile): String =
@@ -93,7 +93,7 @@ class MarkdownProjectReader(private val isHelp: Boolean) : IProjectReader {
 
     private fun fileToSort(file: OtterFile) = when (file.nameWithoutExtension) {
         "back" -> 9999
-        else -> fileToId(file)
+        else -> fileToIndex(file)
     }
 
     private fun simplifyTitle(s: String) = s.toIntOrNull()?.toString() ?: s
@@ -129,7 +129,7 @@ class MarkdownProjectReader(private val isHelp: Boolean) : IProjectReader {
      * @receiver must be a file, not a directory
      */
     private fun OtterFile.readContents(): List<Content> {
-        val fileId = fileToId(this)
+        val fileId = fileToIndex(this)
         var sort = 1
         val contents = if (isHelp) {
             this.bufferedReader()
